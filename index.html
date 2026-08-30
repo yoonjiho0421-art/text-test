@@ -362,6 +362,21 @@
     padding:12px 0;
   }
   .group-card-body .word-item:last-child{border-bottom:none;}
+  .group-card.cleared{border-color:var(--good);}
+  .group-check{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--good);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:700;
+    margin-right:6px;
+    vertical-align:middle;
+  }
   .word-item{
     background:var(--card);
     border:1px solid var(--line);
@@ -573,6 +588,22 @@
   }
   .result-score span{font-size:22px;color:var(--muted);font-weight:400;}
   .result-label{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
+  .group-cleared-note{
+    background:var(--good-soft);
+    color:var(--good);
+    font-size:13px;
+    border-radius:8px;
+    padding:9px 12px;
+    margin:-10px 0 20px;
+  }
+  .group-uncleared-note{
+    background:var(--bad-soft);
+    color:var(--bad);
+    font-size:13px;
+    border-radius:8px;
+    padding:9px 12px;
+    margin:-10px 0 20px;
+  }
   .wrong-list{text-align:left;margin-top:18px;}
   .wrong-list h3{font-size:13.5px;color:var(--muted);margin-bottom:10px;font-weight:600;}
   .wrong-item{
@@ -627,7 +658,7 @@
       <h2>엑셀로 단어 추가</h2>
       <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
       <label class="drop" id="dropZone">
-        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" aria-label="엑셀 파일 선택">
         <div class="icon">📄</div>
         <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
         <div class="sub">.xlsx / .xls</div>
@@ -635,9 +666,9 @@
       <div class="upload-msg" id="uploadMsg"></div>
 
       <div class="manual-add">
-        <input type="text" id="addWord" placeholder="영단어">
-        <input type="text" id="addMeaning" placeholder="뜻">
-        <input type="text" id="addEtym" placeholder="어원 (선택)">
+        <input type="text" id="addWord" placeholder="영단어" aria-label="영단어">
+        <input type="text" id="addMeaning" placeholder="뜻" aria-label="뜻">
+        <input type="text" id="addEtym" placeholder="어원 (선택)" aria-label="어원 (선택)">
         <button id="addBtn">추가</button>
       </div>
     </div>
@@ -727,11 +758,17 @@ function loadWords(){
   return null;
 }
 function saveWords(words){
-  localStorage.setItem(STORE_KEY, JSON.stringify(words));
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(words));
+  }catch(e){
+    alert('저장에 실패했습니다. 브라우저 저장 공간이 부족하거나 시크릿 모드일 수 있습니다.');
+  }
   renderStats();
 }
 function saveAccuracy(pct){
-  localStorage.setItem(HIST_KEY, String(pct));
+  try{
+    localStorage.setItem(HIST_KEY, String(pct));
+  }catch(e){}
   renderStats();
 }
 
@@ -773,11 +810,12 @@ let GROUP_SIZE = loadGroupSize();
 function buildGroups(size){
   const groups = [];
   for(let i=0;i<WORDS.length;i+=size){
-    groups.push({
-      from: i+1,
-      to: Math.min(i+size, WORDS.length),
-      items: WORDS.slice(i, i+size),
-    });
+    const sliceEnd = Math.min(i+size, WORDS.length);
+    const items = [];
+    for(let j=i;j<sliceEnd;j++){
+      items.push(Object.assign({}, WORDS[j], {__idx:j}));
+    }
+    groups.push({ from: i+1, to: sliceEnd, items });
   }
   return groups;
 }
@@ -803,7 +841,9 @@ function renderWordList(filter){
     // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
-    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+    const filtered = WORDS
+      .map((w,i)=> Object.assign({}, w, {__idx:i}))
+      .filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
 
     if(filtered.length===0){
       searchTestBar.style.display = 'none';
@@ -818,7 +858,7 @@ function renderWordList(filter){
       startQuiz(shuffle(filtered));
     };
 
-    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
     bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
     return;
   }
@@ -842,11 +882,15 @@ function renderWordList(filter){
 
   groupListEl.innerHTML = groups.map((g, gi)=>{
     const openAttr = openGroups.has(gi) ? ' open' : '';
-    return `<div class="group-card${openAttr}" data-gi="${gi}">
+    const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
+    const cleared = isGroupCleared(gKey);
+    const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
+    const clearedClass = cleared ? ' cleared' : '';
+    return `<div class="group-card${openAttr}${clearedClass}" data-gi="${gi}">
       <div class="group-card-head" data-toggle="${gi}">
         <div>
-          <div class="group-card-title">그룹 ${gi+1} <span style="color:var(--muted);font-weight:400;">(${g.from}~${g.to}번)</span></div>
-          <div class="group-card-sub">${g.items.length}개 단어</div>
+          <div class="group-card-title">${clearedBadge}그룹 ${gi+1} <span style="color:var(--muted);font-weight:400;">(${g.from}~${g.to}번)</span></div>
+          <div class="group-card-sub">${g.items.length}개 단어${cleared ? ' · 완료' : ''}</div>
         </div>
         <div class="group-card-actions">
           <button class="group-test-btn" data-testgroup="${gi}">시험보기</button>
@@ -868,7 +912,7 @@ function renderWordList(filter){
         openGroups.add(gi);
         const body = card.querySelector('.group-card-body');
         const g = groups[gi];
-        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
         bindWordDelButtons(body, ()=> renderWordList(''));
       }else{
         openGroups.delete(gi);
@@ -883,7 +927,7 @@ function renderWordList(filter){
     if(!card) return;
     const body = card.querySelector('.group-card-body');
     const g = groups[gi];
-    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
     bindWordDelButtons(body, ()=> renderWordList(''));
   });
 
@@ -893,8 +937,9 @@ function renderWordList(filter){
       e.stopPropagation();
       const gi = parseInt(btn.dataset.testgroup, 10);
       const g = groups[gi];
+      const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
       document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(shuffle(g.items));
+      startQuiz(shuffle(g.items), gKey);
     });
   });
 }
@@ -909,7 +954,7 @@ function renderWordItemHtml(w, realIdx){
       <div class="w-kr">${escapeHtml(w.meaning)}</div>
       ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
     </div>
-    <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
+    <button class="w-del" data-idx="${realIdx}" title="삭제" aria-label="${escapeHtml(w.word)} 삭제">✕</button>
   </div>`;
 }
 
@@ -935,8 +980,8 @@ document.getElementById('searchBox').addEventListener('input', (e)=>{
 
 document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
   const n = parseInt(document.getElementById('groupSize').value, 10);
-  if(!n || n<1){
-    alert('1 이상의 숫자를 입력해주세요.');
+  if(!n || n<1 || n>1000){
+    alert('1 이상 1000 이하의 숫자를 입력해주세요.');
     return;
   }
   GROUP_SIZE = n;
@@ -1020,7 +1065,7 @@ function handleFile(file){
           const m = String(row[meanCol]||'').trim();
           const et = etymCol!==-1 ? String(row[etymCol]||'').trim() : '';
           if(!w || !m) { continue; }
-          const exists = WORDS.some(x=>x.word.toLowerCase()===w.toLowerCase());
+          const exists = WORDS.some(x=>x.word.toLowerCase()===w.toLowerCase() && x.meaning.toLowerCase()===m.toLowerCase());
           if(exists){ skipped++; continue; }
           WORDS.push({word:w, meaning:m, etym:et});
           added++;
@@ -1053,6 +1098,33 @@ function findCol(header, keywords){
 /* ---------- Test ---------- */
 let quizState = null;
 let testMode = 'count'; // 'count' | 'range'
+
+/* ---------- Group completion tracking ---------- */
+const GROUP_RESULT_KEY = 'vocabBench.groupResults.v1';
+function loadGroupResults(){
+  try{
+    const raw = localStorage.getItem(GROUP_RESULT_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+function saveGroupResults(obj){
+  try{
+    localStorage.setItem(GROUP_RESULT_KEY, JSON.stringify(obj));
+  }catch(e){}
+}
+function groupKeyOf(size, from, to){
+  return `${size}_${from}_${to}`;
+}
+function setGroupCleared(key, cleared){
+  const results = loadGroupResults();
+  results[key] = cleared;
+  saveGroupResults(results);
+}
+function isGroupCleared(key){
+  const results = loadGroupResults();
+  return !!results[key];
+}
 
 function resetTestSetup(){
   const setupEl = document.getElementById('testSetup');
@@ -1140,13 +1212,14 @@ function shuffle(arr){
   return a;
 }
 
-function startQuiz(pool){
+function startQuiz(pool, groupKey){
   quizState = {
     items: pool,
     idx: 0,
     correct: 0,
     wrongList: [],
     answered: false,
+    groupKey: groupKey || null,
   };
   document.getElementById('testSetup').style.display = 'none';
   document.getElementById('resultArea').style.display = 'none';
@@ -1230,9 +1303,11 @@ function checkAnswer(skip){
       + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
   }
   input.disabled = true;
-  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
-  document.getElementById('quizSubmit').onclick = nextStep;
+  const submitBtn = document.getElementById('quizSubmit');
+  submitBtn.textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
+  const freshSubmitBtn = submitBtn.cloneNode(true);
+  submitBtn.parentNode.replaceChild(freshSubmitBtn, submitBtn);
+  freshSubmitBtn.addEventListener('click', nextStep);
   document.getElementById('quizSkip').style.display = 'none';
 }
 
@@ -1256,10 +1331,20 @@ function showResult(){
   const pct = Math.round((st.correct/total)*1000)/10;
   saveAccuracy(pct);
 
+  let groupClearedNote = '';
+  if(st.groupKey){
+    const cleared = st.correct === total;
+    setGroupCleared(st.groupKey, cleared);
+    groupClearedNote = cleared
+      ? `<div class="group-cleared-note">✓ 이 그룹을 모두 맞혔습니다. 완료로 표시됩니다.</div>`
+      : (total>0 ? `<div class="group-uncleared-note">이 그룹의 완료 표시가 해제되었습니다. 전부 맞히면 완료로 표시됩니다.</div>` : '');
+  }
+
   area.innerHTML = `
     <div class="result-card">
       <div class="result-score">${st.correct}<span> / ${total}</span></div>
       <div class="result-label">정답률 ${pct}%</div>
+      ${groupClearedNote}
       <div class="quiz-btns">
         <button class="btn-primary" id="retryBtn">다시 테스트</button>
         ${st.wrongList.length ? `<button class="btn-danger" id="retryWrongBtn">틀린 것만 다시 (${st.wrongList.length}개)</button>` : ''}
@@ -1284,6 +1369,7 @@ function showResult(){
   document.getElementById('retryBtn').addEventListener('click', ()=> resetTestSetup());
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
+    renderWordList(document.getElementById('searchBox').value);
   });
   if(st.wrongList.length){
     document.getElementById('retryWrongBtn').addEventListener('click', ()=>{
