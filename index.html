@@ -815,7 +815,7 @@ function renderWordList(filter){
     document.getElementById('searchTestCount').textContent = `검색된 단어 ${filtered.length}개`;
     document.getElementById('searchTestBtn').onclick = ()=>{
       document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(filtered.slice());
+      startQuiz(shuffle(filtered));
     };
 
     listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
@@ -894,7 +894,7 @@ function renderWordList(filter){
       const gi = parseInt(btn.dataset.testgroup, 10);
       const g = groups[gi];
       document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(g.items.slice());
+      startQuiz(shuffle(g.items));
     });
   });
 }
