@@ -231,6 +231,137 @@
     cursor:pointer;
     font-family:inherit;
   }
+
+  .group-bar{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .group-bar-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .group-bar-row label{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .group-bar-row input[type=number]{
+    width:64px;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    font-size:13.5px;
+    font-family:inherit;
+    text-align:center;
+  }
+  .group-bar-row span{font-size:13px;color:var(--muted);}
+  .group-apply-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 14px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    margin-left:auto;
+  }
+  .group-bar-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+    line-height:1.5;
+  }
+
+  .search-test-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--accent-soft);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:14px;
+    font-size:13px;
+    color:var(--accent);
+  }
+  .search-test-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 14px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    flex:none;
+  }
+
+  .group-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-bottom:8px;
+    overflow:hidden;
+  }
+  .group-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:13px 16px;
+    cursor:pointer;
+  }
+  .group-card-title{
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .group-card-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+    font-weight:400;
+  }
+  .group-card-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:none;
+  }
+  .group-test-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 13px;
+    font-size:12.5px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .group-caret{
+    color:var(--muted);
+    font-size:13px;
+    transition:transform .15s;
+    flex:none;
+  }
+  .group-card.open .group-caret{transform:rotate(90deg);}
+  .group-card-body{
+    display:none;
+    padding:0 16px 14px;
+    border-top:1px solid var(--line);
+  }
+  .group-card.open .group-card-body{display:block;}
+  .group-card-body .word-item{
+    box-shadow:none;
+    border:none;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    margin-bottom:0;
+    padding:12px 0;
+  }
+  .group-card-body .word-item:last-child{border-bottom:none;}
   .word-item{
     background:var(--card);
     border:1px solid var(--line);
@@ -516,6 +647,23 @@
       <button class="clear-all" id="clearAllBtn">전체 삭제</button>
     </div>
 
+    <div class="group-bar" id="groupBar">
+      <div class="group-bar-row">
+        <label for="groupSize">그룹 크기</label>
+        <input type="number" id="groupSize" min="1" value="10">
+        <span>개씩</span>
+        <button id="groupApplyBtn" class="group-apply-btn">그룹 나누기</button>
+      </div>
+      <div class="group-bar-hint" id="groupHint"></div>
+    </div>
+
+    <div id="searchTestBar" class="search-test-bar" style="display:none;">
+      <span id="searchTestCount"></span>
+      <button id="searchTestBtn" class="search-test-btn">이 결과로 시험보기</button>
+    </div>
+
+    <div id="groupList"></div>
+
     <div id="wordList"></div>
   </section>
 
@@ -611,40 +759,168 @@ function renderStats(){
   document.getElementById('statAcc').textContent = acc ? acc+'%' : '-';
 }
 
+/* ---------- Group size setting ---------- */
+const GROUP_KEY = 'vocabBench.groupSize.v1';
+function loadGroupSize(){
+  const v = parseInt(localStorage.getItem(GROUP_KEY) || '10', 10);
+  return (v && v>0) ? v : 10;
+}
+function saveGroupSize(n){
+  localStorage.setItem(GROUP_KEY, String(n));
+}
+let GROUP_SIZE = loadGroupSize();
+
+function buildGroups(size){
+  const groups = [];
+  for(let i=0;i<WORDS.length;i+=size){
+    groups.push({
+      from: i+1,
+      to: Math.min(i+size, WORDS.length),
+      items: WORDS.slice(i, i+size),
+    });
+  }
+  return groups;
+}
+
 /* ---------- Word list render ---------- */
 function renderWordList(filter){
   const listEl = document.getElementById('wordList');
+  const groupListEl = document.getElementById('groupList');
+  const groupBarEl = document.getElementById('groupBar');
+  const searchTestBar = document.getElementById('searchTestBar');
   const f = (filter||'').trim().toLowerCase();
-  const filtered = WORDS.filter(w=> !f || w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+  const isSearching = f.length>0;
 
   if(WORDS.length===0){
+    groupBarEl.style.display = 'none';
+    groupListEl.innerHTML = '';
+    searchTestBar.style.display = 'none';
     listEl.innerHTML = '<div class="empty-state">아직 등록된 단어가 없습니다.<br>엑셀을 올리거나 직접 추가해보세요.</div>';
     return;
   }
-  if(filtered.length===0){
-    listEl.innerHTML = '<div class="empty-state">검색 결과가 없습니다.</div>';
+
+  if(isSearching){
+    // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
+    groupBarEl.style.display = 'none';
+    groupListEl.innerHTML = '';
+    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+
+    if(filtered.length===0){
+      searchTestBar.style.display = 'none';
+      listEl.innerHTML = '<div class="empty-state">검색 결과가 없습니다.</div>';
+      return;
+    }
+
+    searchTestBar.style.display = 'flex';
+    document.getElementById('searchTestCount').textContent = `검색된 단어 ${filtered.length}개`;
+    document.getElementById('searchTestBtn').onclick = ()=>{
+      document.querySelector('nav.tabs button[data-tab="test"]').click();
+      startQuiz(filtered.slice());
+    };
+
+    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
     return;
   }
 
-  listEl.innerHTML = filtered.map((w)=>{
-    const realIdx = WORDS.indexOf(w);
-    return `<div class="word-item">
-      <div class="w-num">${realIdx+1}</div>
-      <div class="w-main">
-        <div class="w-en">${escapeHtml(w.word)}</div>
-        <div class="w-kr">${escapeHtml(w.meaning)}</div>
-        ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
+  // 검색 중이 아님: 그룹 카드 뷰
+  searchTestBar.style.display = 'none';
+  listEl.innerHTML = '';
+  groupBarEl.style.display = 'block';
+  document.getElementById('groupSize').value = GROUP_SIZE;
+
+  const groups = buildGroups(GROUP_SIZE);
+  const hint = document.getElementById('groupHint');
+  if(groups.length<=1){
+    hint.textContent = `총 ${WORDS.length}개 단어가 1개 그룹으로 묶여 있습니다.`;
+  }else{
+    const lastSize = groups[groups.length-1].items.length;
+    hint.textContent = lastSize===GROUP_SIZE
+      ? `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 ${groups.length}개 그룹으로 나눴습니다.`
+      : `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 나누고, 마지막 ${lastSize}개는 별도 그룹으로 묶었습니다. (${groups.length}개 그룹)`;
+  }
+
+  groupListEl.innerHTML = groups.map((g, gi)=>{
+    const openAttr = openGroups.has(gi) ? ' open' : '';
+    return `<div class="group-card${openAttr}" data-gi="${gi}">
+      <div class="group-card-head" data-toggle="${gi}">
+        <div>
+          <div class="group-card-title">그룹 ${gi+1} <span style="color:var(--muted);font-weight:400;">(${g.from}~${g.to}번)</span></div>
+          <div class="group-card-sub">${g.items.length}개 단어</div>
+        </div>
+        <div class="group-card-actions">
+          <button class="group-test-btn" data-testgroup="${gi}">시험보기</button>
+          <span class="group-caret">▸</span>
+        </div>
       </div>
-      <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
+      <div class="group-card-body" data-body="${gi}"></div>
     </div>`;
   }).join('');
 
-  listEl.querySelectorAll('.w-del').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+  // 그룹 펼치기/접기
+  groupListEl.querySelectorAll('[data-toggle]').forEach(head=>{
+    head.addEventListener('click', (e)=>{
+      if(e.target.closest('.group-test-btn')) return;
+      const gi = parseInt(head.dataset.toggle, 10);
+      const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+      const isOpen = card.classList.toggle('open');
+      if(isOpen){
+        openGroups.add(gi);
+        const body = card.querySelector('.group-card-body');
+        const g = groups[gi];
+        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+        bindWordDelButtons(body, ()=> renderWordList(''));
+      }else{
+        openGroups.delete(gi);
+      }
+    });
+  });
+
+  // 이미 열려있던 그룹은 내용 채우기
+  openGroups.forEach(gi=>{
+    if(gi>=groups.length) return;
+    const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+    if(!card) return;
+    const body = card.querySelector('.group-card-body');
+    const g = groups[gi];
+    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    bindWordDelButtons(body, ()=> renderWordList(''));
+  });
+
+  // 그룹별 시험보기
+  groupListEl.querySelectorAll('[data-testgroup]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const gi = parseInt(btn.dataset.testgroup, 10);
+      const g = groups[gi];
+      document.querySelector('nav.tabs button[data-tab="test"]').click();
+      startQuiz(g.items.slice());
+    });
+  });
+}
+
+const openGroups = new Set();
+
+function renderWordItemHtml(w, realIdx){
+  return `<div class="word-item">
+    <div class="w-num">${realIdx+1}</div>
+    <div class="w-main">
+      <div class="w-en">${escapeHtml(w.word)}</div>
+      <div class="w-kr">${escapeHtml(w.meaning)}</div>
+      ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
+    </div>
+    <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
+  </div>`;
+}
+
+function bindWordDelButtons(container, onDeleted){
+  container.querySelectorAll('.w-del').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
       const idx = parseInt(btn.dataset.idx,10);
       WORDS.splice(idx,1);
       saveWords(WORDS);
-      renderWordList(document.getElementById('searchBox').value);
+      onDeleted();
     });
   });
 }
@@ -657,11 +933,24 @@ document.getElementById('searchBox').addEventListener('input', (e)=>{
   renderWordList(e.target.value);
 });
 
+document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
+  const n = parseInt(document.getElementById('groupSize').value, 10);
+  if(!n || n<1){
+    alert('1 이상의 숫자를 입력해주세요.');
+    return;
+  }
+  GROUP_SIZE = n;
+  saveGroupSize(n);
+  openGroups.clear();
+  renderWordList('');
+});
+
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
   if(WORDS.length===0) return;
   if(confirm('등록된 단어를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.')){
     WORDS = [];
     saveWords(WORDS);
+    openGroups.clear();
     renderWordList('');
   }
 });
