@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>단어 테스트장</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#8b3a2f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="단어테스트">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1c1b1a;
+    --paper:#faf7f2;
+    --card:#ffffff;
+    --line:#e4ddd2;
+    --accent:#8b3a2f;
+    --accent-soft:#f3e2dc;
+    --good:#2f6b4f;
+    --good-soft:#e5f1ea;
+    --bad:#a13a2f;
+    --bad-soft:#fbe8e4;
+    --muted:#78716a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{margin-bottom:24px;}
+  .brand{
+    font-family: Georgia, 'Noto Serif KR', serif;
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .brand small{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:400;
+    color:var(--muted);
+  }
+  .stat-row{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .stat-pill{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .stat-pill b{color:var(--ink);}
+
+  .install-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+  }
+  .ios-hint{
+    display:none;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:10px;
+    line-height:1.5;
+  }
+  .ios-hint.show{display:block;}
+
+  nav.tabs{
+    display:flex;
+    gap:6px;
+    margin:22px 0 18px;
+    border-bottom:1px solid var(--line);
+  }
+  nav.tabs button{
+    appearance:none;
+    border:none;
+    background:none;
+    font-size:15px;
+    font-family:inherit;
+    padding:10px 4px;
+    margin-right:18px;
+    color:var(--muted);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transform:translateY(1px);
+  }
+  nav.tabs button.active{
+    color:var(--ink);
+    font-weight:700;
+    border-bottom:2px solid var(--accent);
+  }
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* Upload card */
+  .upload-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:18px;
+  }
+  .upload-card h2{
+    margin:0 0 6px;
+    font-size:17px;
+  }
+  .upload-card p{
+    margin:0 0 16px;
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .drop{
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:26px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.drag{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .drop input{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+  .drop .icon{display:block;font-size:26px;margin-bottom:6px;line-height:1;}
+  .drop .main{display:block;font-size:14px;font-weight:600;line-height:1.4;}
+  .drop .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
+
+  .upload-msg{
+    margin-top:12px;
+    font-size:13px;
+    padding:10px 12px;
+    border-radius:8px;
+    display:none;
+  }
+  .upload-msg.show{display:block;}
+  .upload-msg.ok{background:var(--good-soft);color:var(--good);}
+  .upload-msg.err{background:var(--bad-soft);color:var(--bad);}
+
+  .manual-add{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .manual-add input{
+    flex:1;
+    min-width:110px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:inherit;
+    background:#fff;
+  }
+  .manual-add button{
+    padding:9px 16px;
+    border:none;
+    border-radius:8px;
+    background:var(--ink);
+    color:#fff;
+    font-size:13.5px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+
+  /* word list */
+  .list-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .list-toolbar input[type=text]{
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:inherit;
+    width:180px;
+  }
+  .clear-all{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--bad);
+    border-radius:8px;
+    padding:7px 12px;
+    font-size:12.5px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+
+  .group-bar{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .group-bar-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .group-bar-row label{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .group-bar-row input[type=number]{
+    width:64px;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    font-size:13.5px;
+    font-family:inherit;
+    text-align:center;
+  }
+  .group-bar-row span{font-size:13px;color:var(--muted);}
+  .group-apply-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 14px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    margin-left:auto;
+  }
+  .group-bar-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+    line-height:1.5;
+  }
+
+  .search-test-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--accent-soft);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:14px;
+    font-size:13px;
+    color:var(--accent);
+  }
+  .search-test-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 14px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    flex:none;
+  }
+
+  .group-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-bottom:8px;
+    overflow:hidden;
+  }
+  .group-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:13px 16px;
+    cursor:pointer;
+  }
+  .group-card-title{
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .group-card-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+    font-weight:400;
+  }
+  .group-card-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:none;
+  }
+  .group-test-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:7px 13px;
+    font-size:12.5px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .group-caret{
+    color:var(--muted);
+    font-size:13px;
+    transition:transform .15s;
+    flex:none;
+  }
+  .group-card.open .group-caret{transform:rotate(90deg);}
+  .group-card-body{
+    display:none;
+    padding:0 16px 14px;
+    border-top:1px solid var(--line);
+  }
+  .group-card.open .group-card-body{display:block;}
+  .group-card-body .word-item{
+    box-shadow:none;
+    border:none;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    margin-bottom:0;
+    padding:12px 0;
+  }
+  .group-card-body .word-item:last-child{border-bottom:none;}
+  .word-item{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .word-item .w-num{
+    flex:none;
+    width:30px;
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:600;
+    padding-top:2px;
+  }
+  .word-item .w-main{flex:1;}
+  .word-item .w-en{font-weight:700;font-size:15px;}
+  .word-item .w-kr{font-size:13.5px;color:var(--ink);margin-top:3px;}
+  .word-item .w-etym{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
+  .word-item .w-del{
+    background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:16px;padding:2px 6px;height:fit-content;
+  }
+  .word-item .w-del:hover{color:var(--bad);}
+
+  /* Test panel */
+  .test-setup{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    text-align:center;
+  }
+  .test-setup h2{margin:0 0 6px;font-size:18px;}
+  .test-setup p{margin:0 0 18px;font-size:13.5px;color:var(--muted);}
+  .count-select{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .count-select button{
+    padding:8px 16px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:inherit;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .count-select button.sel{
+    background:var(--ink);
+    color:#fff;
+    border-color:var(--ink);
+  }
+  .start-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:12px 30px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .start-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
+
+  .range-mode-tabs{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:18px;
+  }
+  .range-mode-tabs button{
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .range-mode-tabs button.mode-sel{
+    background:var(--ink);
+    color:#fff;
+    border-color:var(--ink);
+  }
+  .range-inputs{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+  }
+  .range-inputs input[type=number]{
+    width:100px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    font-family:inherit;
+    text-align:center;
+  }
+  .range-inputs span{color:var(--muted);font-size:14px;}
+  .range-inputs .range-max{font-size:12px;color:var(--muted);width:100%;margin-top:2px;}
+  .range-order{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    margin-bottom:18px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .range-order label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .range-err{
+    color:var(--bad);
+    font-size:12.5px;
+    margin-top:10px;
+    min-height:16px;
+  }
+
+  .quiz-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:36px 26px;
+    text-align:center;
+  }
+  .quiz-progress{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-bottom:18px;
+    letter-spacing:.02em;
+  }
+  .quiz-word{
+    font-family: Georgia, 'Noto Serif KR', serif;
+    font-size:34px;
+    font-weight:700;
+    margin-bottom:26px;
+    word-break:break-word;
+  }
+  .quiz-input{
+    width:100%;
+    max-width:340px;
+    padding:12px 14px;
+    font-size:16px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    text-align:center;
+    font-family:inherit;
+    margin-bottom:14px;
+  }
+  .quiz-input:focus{outline:none;border-color:var(--accent);}
+  .quiz-input.correct{border-color:var(--good);background:var(--good-soft);}
+  .quiz-input.wrong{border-color:var(--bad);background:var(--bad-soft);}
+
+  .quiz-feedback{
+    min-height:24px;
+    font-size:14px;
+    margin-bottom:16px;
+  }
+  .quiz-feedback.correct{color:var(--good);font-weight:700;}
+  .quiz-feedback.wrong{color:var(--bad);}
+  .quiz-feedback .answer-reveal{color:var(--ink);font-weight:700;}
+  .feedback-etym{
+    color:var(--muted);
+    font-weight:400;
+    font-size:12.5px;
+    margin-top:8px;
+    line-height:1.5;
+    text-align:left;
+    background:var(--accent-soft);
+    border-radius:8px;
+    padding:9px 12px;
+  }
+
+  .quiz-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .quiz-btns button{
+    padding:10px 22px;
+    border-radius:9px;
+    font-size:14px;
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-ghost{background:none;border:1px solid var(--line) !important;color:var(--muted);}
+  .btn-danger{background:var(--bad);color:#fff;}
+
+  .result-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:34px 26px;
+    text-align:center;
+  }
+  .result-score{
+    font-family:Georgia,'Noto Serif KR',serif;
+    font-size:48px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .result-score span{font-size:22px;color:var(--muted);font-weight:400;}
+  .result-label{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
+  .wrong-list{text-align:left;margin-top:18px;}
+  .wrong-list h3{font-size:13.5px;color:var(--muted);margin-bottom:10px;font-weight:600;}
+  .wrong-item{
+    border-top:1px solid var(--line);
+    padding:10px 0;
+    font-size:13.5px;
+  }
+  .wrong-item .we{font-weight:700;}
+  .wrong-item .wm{color:var(--muted);margin-top:2px;}
+  .wrong-item .wyours{color:var(--bad);margin-top:2px;}
+  .wrong-item .wetym{color:var(--muted);font-size:12px;margin-top:6px;line-height:1.5;}
+
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--muted);
+    font-size:13.5px;
+  }
+
+  footer.credit{
+    margin-top:36px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">단어 테스트장 <small>Vocabulary Bench</small></div>
+    <div class="stat-row">
+      <div class="stat-pill">총 단어 <b id="statTotal">0</b>개</div>
+      <div class="stat-pill">최근 정답률 <b id="statAcc">-</b></div>
+      <button id="installBtn" class="install-btn" style="display:none;">홈 화면에 추가</button>
+    </div>
+    <div class="ios-hint" id="iosHint">Safari에서는 <b>공유 버튼</b> → <b>홈 화면에 추가</b>로 앱처럼 설치할 수 있습니다.</div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="manage" class="active">단어 관리</button>
+    <button data-tab="test">테스트</button>
+  </nav>
+
+  <!-- ===== 단어 관리 ===== -->
+  <section class="panel active" id="panel-manage">
+
+    <div class="upload-card">
+      <h2>엑셀로 단어 추가</h2>
+      <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
+      <label class="drop" id="dropZone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div class="icon">📄</div>
+        <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
+        <div class="sub">.xlsx / .xls</div>
+      </label>
+      <div class="upload-msg" id="uploadMsg"></div>
+
+      <div class="manual-add">
+        <input type="text" id="addWord" placeholder="영단어">
+        <input type="text" id="addMeaning" placeholder="뜻">
+        <input type="text" id="addEtym" placeholder="어원 (선택)">
+        <button id="addBtn">추가</button>
+      </div>
+    </div>
+
+    <div class="list-toolbar">
+      <input type="text" id="searchBox" placeholder="단어 검색...">
+      <button class="clear-all" id="clearAllBtn">전체 삭제</button>
+    </div>
+
+    <div class="group-bar" id="groupBar">
+      <div class="group-bar-row">
+        <label for="groupSize">그룹 크기</label>
+        <input type="number" id="groupSize" min="1" value="10">
+        <span>개씩</span>
+        <button id="groupApplyBtn" class="group-apply-btn">그룹 나누기</button>
+      </div>
+      <div class="group-bar-hint" id="groupHint"></div>
+    </div>
+
+    <div id="searchTestBar" class="search-test-bar" style="display:none;">
+      <span id="searchTestCount"></span>
+      <button id="searchTestBtn" class="search-test-btn">이 결과로 시험보기</button>
+    </div>
+
+    <div id="groupList"></div>
+
+    <div id="wordList"></div>
+  </section>
+
+  <!-- ===== 테스트 ===== -->
+  <section class="panel" id="panel-test">
+
+    <div id="testEmptyState" class="empty-state" style="display:none;">테스트할 단어가 없습니다.<br>먼저 "단어 관리" 탭에서 단어를 추가해주세요.</div>
+
+    <div id="testSetup" class="test-setup">
+      <h2>뜻 쓰기 테스트</h2>
+      <p>영단어를 보고 뜻을 입력하세요.</p>
+
+      <div class="range-mode-tabs" id="rangeModeTabs">
+        <button data-mode="count" class="mode-sel">개수로 선택</button>
+        <button data-mode="range">범위로 선택</button>
+      </div>
+
+      <div id="modeCount">
+        <div class="count-select" id="countSelect"></div>
+      </div>
+
+      <div id="modeRange" style="display:none;">
+        <div class="range-inputs">
+          <input type="number" id="rangeFrom" min="1" placeholder="시작 번호">
+          <span>~</span>
+          <input type="number" id="rangeTo" min="1" placeholder="끝 번호">
+          <span class="range-max" id="rangeMaxHint"></span>
+        </div>
+        <div class="range-order">
+          <label><input type="radio" name="rangeOrder" value="inorder" checked> 순서대로</label>
+          <label><input type="radio" name="rangeOrder" value="shuffle"> 무작위로</label>
+        </div>
+      </div>
+
+      <button class="start-btn" id="startTestBtn">테스트 시작</button>
+      <div class="range-err" id="rangeErr"></div>
+    </div>
+
+    <div id="quizArea" style="display:none;"></div>
+    <div id="resultArea" style="display:none;"></div>
+
+  </section>
+
+  <footer class="credit">
+    데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
+    저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
+  </footer>
+</div>
+
+<script>
+const SEED_WORDS = [{"word": "startled","meaning": "깜짝 놀라게 하다","etym": "startle(고대영어 steartlian, 갑자기 움직이다) → 놀라게 하다"},{"word": "temptation","meaning": "유혹","etym": "temptare(라틴어, 시험하다, 시도하다) → 시험에 들게 함"},{"word": "hesitated","meaning": "망설였다","etym": "haesitare(라틴어, 붙어서 머뭇거리다)"},{"word": "irony","meaning": "역설, 아이러니","etym": "eironeia(그리스어, 시치미 떼기, 위장된 무지)"},{"word": "deposit","meaning": "쌓다, 퇴적시키다","etym": "de(아래로)+ponere(라틴어, 놓다) → 내려놓다"},{"word": "irritates","meaning": "짜증나게 하다","etym": "irritare(라틴어, 자극하다)"},{"word": "asset","meaning": "자산, 소중한 것","etym": "assez(고대프랑스어, 충분히) → 충분한 재산"},{"word": "tragedy","meaning": "비극","etym": "tragos(그리스어, 염소)+ode(노래) → 염소의 노래(고대 제의)"},{"word": "suppose","meaning": "추정하다, 생각하다","etym": "sub(아래에)+ponere(라틴어, 놓다) → 가정을 밑에 둠"},{"word": "represent","meaning": "나타내다, 상징하다","etym": "re(다시)+praesentare(라틴어, 보여주다) → 다시 보여줌"},{"word": "climate","meaning": "기후","etym": "klima(그리스어, 경사, 지역)"},{"word": "figure","meaning": "수치, 숫자","etym": "figura(라틴어, 형태, 모양)"},{"word": "assimilate","meaning": "받아들이다, 흡수하다","etym": "ad(~로)+similis(라틴어, 비슷한) → 비슷하게 만들다"},{"word": "peruse","meaning": "정독하다","etym": "per(완전히)+use(사용하다) → 처음부터 끝까지 사용/읽음"},{"word": "novices","meaning": "초심자들","etym": "novus(라틴어, 새로운) → 새로 시작한 사람"},{"word": "passport","meaning": "여권, 통행증","etym": "passer(프랑스어, 지나가다)+port(항구) → 항구를 통과하게 해주는 것"},{"word": "fragmentary","meaning": "단편적인","etym": "frangere(라틴어, 부수다) → 조각난"},{"word": "dwindles","meaning": "줄어들다","etym": "dwinan(고대영어, 사라지다) → 점점 줄어들다"},{"word": "plunged","meaning": "급락했다, 뛰어들었다","etym": "plumbum(라틴어, 납) → 납덩이처럼 떨어짐"},{"word": "verify","meaning": "확인하다, 입증하다","etym": "verus(라틴어, 진실한)+facere(만들다) → 진실로 만들다"},{"word": "noxious","meaning": "유해한","etym": "noxa(라틴어, 해, 손상) → 해로운"},{"word": "exceptions","meaning": "예외들","etym": "ex(밖으로)+capere(라틴어, 잡다) → 밖으로 빼낸 것"},{"word": "perseverance","meaning": "인내, 끈기","etym": "per(완전히)+severus(라틴어, 엄격한) → 끝까지 엄격히 지속함"},{"word": "offspring","meaning": "자손","etym": "off(~에서 나온)+spring(솟아나다, 고대영어 springan)"},{"word": "inception","meaning": "시작, 개시","etym": "in(안으로)+capere(라틴어, 잡다) → 잡아 시작함"},{"word": "respiration","meaning": "호흡","etym": "re(반복)+spirare(라틴어, 숨쉬다)"},{"word": "surplus","meaning": "잉여, 과잉","etym": "super(위에)+plus(라틴어, 더 많은) → 넘치는 양"},{"word": "passed away","meaning": "사망했다","etym": "pass(지나가다, 고대프랑스어 passer)+away(멀리) → 완곡한 죽음 표현"},{"word": "corridor","meaning": "복도, 통로","etym": "currere(라틴어, 달리다) → 달려서 지나가는 길"},{"word": "elaborate","meaning": "정교한, 공들인","etym": "e(밖으로)+laborare(라틴어, 일하다) → 공들여 만들어낸"},{"word": "erroneously","meaning": "잘못되게","etym": "errare(라틴어, 헤매다, 잘못하다) → 잘못되게"},{"word": "loyalties","meaning": "충성심","etym": "lex, legis(라틴어, 법) → 법을 따르는 마음"},{"word": "subsides","meaning": "가라앉다, 진정되다","etym": "sub(아래로)+sidere(라틴어, 앉다) → 아래로 가라앉다"},{"word": "commence","meaning": "시작하다","etym": "com(강조)+initiare(라틴어, 시작하다)"},{"word": "convene","meaning": "소집하다, 모이다","etym": "con(함께)+venire(라틴어, 오다) → 함께 오다"},{"word": "hypothesis","meaning": "가설","etym": "hypo(아래에)+thesis(그리스어, 놓음) → 밑에 놓인 전제"},{"word": "irresponsible","meaning": "무책임한","etym": "in(부정)+responsum(답하다) → 책임지고 답하지 않는"},{"word": "expelled","meaning": "배출되었다, 추방되었다","etym": "ex(밖으로)+pellere(라틴어, 밀다)"},{"word": "gathered","meaning": "모였다","etym": "gaderian(고대영어, 모으다)"},{"word": "borrowed","meaning": "차용된","etym": "borgian(고대영어, 빌리다, 담보 잡다)"},{"word": "trigger","meaning": "촉발하다","etym": "trekker(네덜란드어, 당기는 것)"},{"word": "exports","meaning": "수출품","etym": "ex(밖으로)+portare(라틴어, 나르다)"},{"word": "abundant","meaning": "풍부한","etym": "ab(강조)+undare(라틴어, 물결치다) → 넘쳐흐르는"},{"word": "dims","meaning": "희미해지다","etym": "dim(고대영어, 어두운, 흐릿한)"},{"word": "sedentary","meaning": "앉아서 하는, 활동이 적은","etym": "sedere(라틴어, 앉다) → 앉아 있는"},{"word": "discharging","meaning": "배출하고 있는","etym": "dis(반대)+carricare(라틴어, 짐을 싣다) → 짐을 내려놓음, 방출함"},{"word": "eliminate","meaning": "제거하다","etym": "e(밖으로)+limen(라틴어, 문지방) → 문지방 밖으로 내쫓다"},{"word": "distinguish","meaning": "구별하다","etym": "dis(따로)+stinguere(라틴어, 표시로 찌르다) → 따로 표시하여 구별함"},{"word": "reversing","meaning": "뒤집는, 반전시키는","etym": "re(뒤로)+vertere(라틴어, 돌리다)"},{"word": "accumulate","meaning": "축적하다","etym": "ad(~로)+cumulus(라틴어, 더미) → 더미로 쌓다"},{"word": "subjective","meaning": "주관적인","etym": "sub(아래에)+jacere(라틴어, 던지다) → 개인 아래에 놓인, 주관의"},{"word": "evaporation","meaning": "증발","etym": "e(밖으로)+vapor(라틴어, 증기) → 증기가 되어 밖으로 나감"},{"word": "appropriate","meaning": "적절한","etym": "ad(~로)+proprius(라틴어, 고유한) → 고유하게 맞는"},{"word": "ubiquitous","meaning": "어디에나 있는","etym": "ubique(라틴어, 어디에나)"},{"word": "secured","meaning": "확보했다","etym": "se(~없이)+cura(라틴어, 걱정) → 걱정 없게 만듦"},{"word": "prolific","meaning": "다작의, 다산의","etym": "proles(라틴어, 자손)+facere(만들다) → 자손을 많이 만드는"},{"word": "transcending","meaning": "초월하는","etym": "trans(넘어서)+scandere(라틴어, 오르다) → 넘어서 오름"},{"word": "rehabilitate","meaning": "회복시키다, 재활시키다","etym": "re(다시)+habilis(라틴어, 적합한) → 다시 적합하게 함"},{"word": "vanish","meaning": "사라지다","etym": "vanus(라틴어, 텅 빈) → 텅 비어 없어짐"},{"word": "imprudent","meaning": "경솔한, 무분별한","etym": "in(부정)+providere(라틴어, 미리 보다) → 미리 살피지 못한"},{"word": "momentary","meaning": "순간적인","etym": "momentum(라틴어, 움직임, 순간)"},{"word": "compatible","meaning": "양립 가능한","etym": "com(함께)+pati(라틴어, 견디다) → 함께 견딜 수 있는"},{"word": "exclusive","meaning": "독점적인, 배타적인","etym": "ex(밖으로)+claudere(라틴어, 닫다) → 밖으로 막아 배제하는"},{"word": "extinctions","meaning": "소멸, 멸종","etym": "ex(밖으로)+stinguere(라틴어, 끄다) → 완전히 꺼져 없어짐"},{"word": "engross","meaning": "몰두하게 하다","etym": "en(만들다)+gross(크게, 라틴어 grossus) → 크게 사로잡다"},{"word": "bombard","meaning": "퍼붓다, 폭격하다","etym": "bombarde(고대프랑스어, 투석기, 대포)"},{"word": "obstacles","meaning": "장애물","etym": "ob(맞서서)+stare(라틴어, 서다) → 앞을 막고 서 있는 것"},{"word": "refuse","meaning": "쓰레기, 폐기물","etym": "re(뒤로)+fundere(라틴어, 붓다) → 뒤로 쏟아버린 것"},{"word": "competition","meaning": "경쟁","etym": "com(함께)+petere(라틴어, 추구하다) → 함께 다투어 구함"},{"word": "variations","meaning": "변화, 변주","etym": "variare(라틴어, 바꾸다, 다양하게 하다)"},{"word": "illuminate","meaning": "밝히다, 조명하다","etym": "in(안에)+lumen(라틴어, 빛) → 빛을 비추다"},{"word": "eclipse","meaning": "가림, 퇴색 (동사: 가리다)","etym": "ek(밖으로)+leipein(그리스어, 떠나다) → 빛이 사라짐"},{"word": "complementary","meaning": "보완적인","etym": "com(함께)+plere(라틴어, 채우다) → 서로 채워주는"},{"word": "imposed","meaning": "부과되었다","etym": "im(안에)+ponere(라틴어, 놓다) → 강제로 놓다"},{"word": "permanence","meaning": "영속성","etym": "per(완전히)+manere(라틴어, 머무르다) → 계속 머무름"},{"word": "suppressed","meaning": "억압했다, 진압했다","etym": "sub(아래로)+premere(라틴어, 누르다) → 아래로 눌러버림"},{"word": "eliminated","meaning": "제거했다","etym": "e(밖으로)+limen(라틴어, 문지방) → 문지방 밖으로 내쫓다"},{"word": "split","meaning": "갈라지다, 분리되다","etym": "splitten(중세네덜란드어, 쪼개다)"},{"word": "fade","meaning": "희미해지다, 사라지다","etym": "fader(고대프랑스어, 색이 바래다)"},{"word": "transformations","meaning": "변화, 변환","etym": "trans(가로질러)+forma(라틴어, 형태) → 형태를 바꿈"},{"word": "offset","meaning": "상쇄하다","etym": "off(떨어져)+set(놓다) → 반대로 놓아 균형을 맞춤"},{"word": "prohibiting","meaning": "금지하는","etym": "pro(앞에서)+habere(라틴어, 잡다, 지니다) → 앞에서 못하게 잡음"},{"word": "lexicon","meaning": "어휘, 어휘 목록","etym": "lexis(그리스어, 말, 단어)"},{"word": "corresponds","meaning": "일치하다, 부합하다","etym": "cor(함께)+respondere(라틴어, 응답하다) → 서로 응답하듯 맞음"},{"word": "emphasize","meaning": "강조하다","etym": "en(안에)+phainein(그리스어, 보이다) → 두드러지게 보이게 함"},{"word": "misfortune","meaning": "불운","etym": "mis(나쁜)+fortuna(라틴어, 운)"},{"word": "differences","meaning": "차이, 다름","etym": "dis(떨어져)+ferre(라틴어, 나르다) → 서로 다르게 나뉨"},{"word": "criticized","meaning": "비판했다","etym": "krinein(그리스어, 판단하다) → 판단하여 지적함"},{"word": "responsible","meaning": "책임이 있는","etym": "responsum(라틴어, 답하다) → 답할 수 있는, 책임지는"},{"word": "divisions","meaning": "분열, 구분","etym": "dividere(라틴어, 나누다)"},{"word": "obsession","meaning": "집착","etym": "ob(향해)+sedere(라틴어, 앉다) → 마음을 사로잡고 눌러앉음"},{"word": "origin","meaning": "기원","etym": "oriri(라틴어, 일어나다, 태어나다)"},{"word": "contradict","meaning": "반박하다, 모순되다","etym": "contra(반대하여)+dicere(라틴어, 말하다) → 반대로 말함"},{"word": "deprives","meaning": "박탈하다","etym": "de(제거)+privare(라틴어, 빼앗다) → 없애서 빼앗음"},{"word": "exploit","meaning": "착취하다, 이용하다","etym": "explicare(라틴어, 펼치다) → 펼쳐서 이용함"},{"word": "explicitly","meaning": "명시적으로","etym": "ex(밖으로)+plicare(라틴어, 접다) → 접힌 것을 펼쳐 분명히 함"},{"word": "capriciousness","meaning": "변덕스러움","etym": "capriccio(이탈리아어, 변덕, 염소처럼 뛰노는 데서 유래)"},{"word": "inhibit","meaning": "억제하다","etym": "in(안에)+habere(라틴어, 가지다) → 안에 붙들어 둠"},{"word": "laziness","meaning": "게으름","etym": "lasich(중세저지독일어, 느슨한) → 게으른 상태"},{"word": "obstinate","meaning": "고집스러운","etym": "ob(맞서서)+stare(라틴어, 서다) → 맞서 버티고 서 있는"},{"word": "implications","meaning": "함의, 영향","etym": "im(안에)+plicare(라틴어, 접다) → 안에 접혀 들어간 뜻"},{"word": "dismiss","meaning": "묵살하다, 해고하다","etym": "dis(떨어져)+mittere(라틴어, 보내다) → 떼어내 보냄"},{"word": "reflects","meaning": "반영하다, 반사하다","etym": "re(다시)+flectere(라틴어, 구부리다) → 다시 비추어 보냄"},{"word": "transformation","meaning": "변화, 변환","etym": "trans(가로질러)+forma(라틴어, 형태) → 형태를 바꿈"},{"word": "confirms","meaning": "확인해주다, 강화하다","etym": "con(함께)+firmare(라틴어, 굳게 하다) → 함께 굳힘"},{"word": "incorporate","meaning": "포함하다, 통합하다","etym": "in(안으로)+corpus(라틴어, 몸) → 하나의 몸으로 만들다"},{"word": "accidents","meaning": "우연, 사고","etym": "ad(~로)+cadere(라틴어, 떨어지다) → 우연히 일어남"},{"word": "unite","meaning": "통합하다, 결합하다","etym": "unus(라틴어, 하나) → 하나로 만들다"},{"word": "suspicion","meaning": "의심","etym": "sub(아래에서)+specere(라틴어, 보다) → 몰래 살펴봄"},{"word": "profound","meaning": "깊은, 심오한","etym": "pro(앞으로)+fundus(라틴어, 바닥) → 바닥까지 깊은"},{"word": "monologue","meaning": "독백","etym": "monos(그리스어, 홀로)+logos(말) → 혼자 하는 말"},{"word": "prudent","meaning": "신중한","etym": "providere(라틴어, 미리 보다) → 미리 내다보는"},{"word": "perspective","meaning": "관점, 시각","etym": "per(통하여)+specere(라틴어, 보다) → 꿰뚫어 봄"},{"word": "cohesive","meaning": "결합력 있는, 응집력 있는","etym": "co(함께)+haerere(라틴어, 붙다) → 함께 붙어 있는"},{"word": "gravity","meaning": "중력, 심각성","etym": "gravis(라틴어, 무거운)"},{"word": "aggravate","meaning": "악화시키다","etym": "ad(더욱)+gravare(라틴어, 무겁게 하다) → 더 무겁게 함"},{"word": "empathetic","meaning": "공감하는","etym": "em(안으로)+pathos(그리스어, 감정) → 감정 안으로 들어가는"},{"word": "underestimated","meaning": "과소평가된","etym": "under(아래로)+aestimare(라틴어, 가치를 매기다) → 낮게 가치를 매김"},{"word": "paradox","meaning": "역설","etym": "para(반하여)+doxa(그리스어, 의견) → 통념에 반하는 것"},{"word": "relief","meaning": "안도, 완화","etym": "re(다시)+levare(라틴어, 들어올리다) → 짐을 다시 들어올려 가볍게 함"},{"word": "evoked","meaning": "불러일으켰다","etym": "e(밖으로)+vocare(라틴어, 부르다) → 밖으로 불러냄"},{"word": "anxious","meaning": "불안한","etym": "angere(라틴어, 조이다, 목을 조르다) → 조여드는 느낌"},{"word": "engagement","meaning": "참여, 몰두, 약속","etym": "en(만들다)+gage(고대프랑스어, 서약) → 서약에 매인 상태"},{"word": "reflect","meaning": "반영하다, 반사하다","etym": "re(다시)+flectere(라틴어, 구부리다) → 다시 비추다"},{"word": "registration","meaning": "등록","etym": "re(다시)+gerere(라틴어, 나르다, 기록하다) → 다시 적어 넣음"},{"word": "weave","meaning": "짜다, 엮다","etym": "wefan(고대영어, 짜다)"},{"word": "obstacle","meaning": "장애물","etym": "ob(맞서서)+stare(라틴어, 서다) → 앞을 막고 서 있는 것"},{"word": "dominate","meaning": "지배하다","etym": "dominus(라틴어, 주인) → 주인처럼 다스리다"},{"word": "disgraceful","meaning": "수치스러운","etym": "dis(부정)+gratia(라틴어, 은총, 명예) → 명예가 없는"},{"word": "dilemma","meaning": "딜레마, 진퇴양난","etym": "di(둘)+lemma(그리스어, 전제) → 두 개의 전제 사이에 낌"},{"word": "prestige","meaning": "명성","etym": "praestigiae(라틴어, 눈속임, 요술) → 눈부시게 보이는 것에서 명성으로 의미 변화"},{"word": "menace","meaning": "위협","etym": "minari(라틴어, 위협하다)"},{"word": "pay off","meaning": "성과를 거두다, 결실을 맺다","etym": "pay(지불하다, 라틴어 pacare)+off(완전히) → 완전히 지불되어 보상받다"}];
+/* ---------- Storage ---------- */
+const STORE_KEY = 'vocabBench.words.v1';
+const HIST_KEY = 'vocabBench.lastAccuracy.v1';
+
+function loadWords(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function saveWords(words){
+  localStorage.setItem(STORE_KEY, JSON.stringify(words));
+  renderStats();
+}
+function saveAccuracy(pct){
+  localStorage.setItem(HIST_KEY, String(pct));
+  renderStats();
+}
+
+let WORDS = loadWords();
+if(!WORDS){
+  WORDS = SEED_WORDS.slice();
+  saveWords(WORDS);
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='test') resetTestSetup();
+  });
+});
+
+/* ---------- Stats ---------- */
+function renderStats(){
+  document.getElementById('statTotal').textContent = WORDS.length;
+  const acc = localStorage.getItem(HIST_KEY);
+  document.getElementById('statAcc').textContent = acc ? acc+'%' : '-';
+}
+
+/* ---------- Group size setting ---------- */
+const GROUP_KEY = 'vocabBench.groupSize.v1';
+function loadGroupSize(){
+  const v = parseInt(localStorage.getItem(GROUP_KEY) || '10', 10);
+  return (v && v>0) ? v : 10;
+}
+function saveGroupSize(n){
+  localStorage.setItem(GROUP_KEY, String(n));
+}
+let GROUP_SIZE = loadGroupSize();
+
+function buildGroups(size){
+  const groups = [];
+  for(let i=0;i<WORDS.length;i+=size){
+    groups.push({
+      from: i+1,
+      to: Math.min(i+size, WORDS.length),
+      items: WORDS.slice(i, i+size),
+    });
+  }
+  return groups;
+}
+
+/* ---------- Word list render ---------- */
+function renderWordList(filter){
+  const listEl = document.getElementById('wordList');
+  const groupListEl = document.getElementById('groupList');
+  const groupBarEl = document.getElementById('groupBar');
+  const searchTestBar = document.getElementById('searchTestBar');
+  const f = (filter||'').trim().toLowerCase();
+  const isSearching = f.length>0;
+
+  if(WORDS.length===0){
+    groupBarEl.style.display = 'none';
+    groupListEl.innerHTML = '';
+    searchTestBar.style.display = 'none';
+    listEl.innerHTML = '<div class="empty-state">아직 등록된 단어가 없습니다.<br>엑셀을 올리거나 직접 추가해보세요.</div>';
+    return;
+  }
+
+  if(isSearching){
+    // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
+    groupBarEl.style.display = 'none';
+    groupListEl.innerHTML = '';
+    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+
+    if(filtered.length===0){
+      searchTestBar.style.display = 'none';
+      listEl.innerHTML = '<div class="empty-state">검색 결과가 없습니다.</div>';
+      return;
+    }
+
+    searchTestBar.style.display = 'flex';
+    document.getElementById('searchTestCount').textContent = `검색된 단어 ${filtered.length}개`;
+    document.getElementById('searchTestBtn').onclick = ()=>{
+      document.querySelector('nav.tabs button[data-tab="test"]').click();
+      startQuiz(shuffle(filtered));
+    };
+
+    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
+    return;
+  }
+
+  // 검색 중이 아님: 그룹 카드 뷰
+  searchTestBar.style.display = 'none';
+  listEl.innerHTML = '';
+  groupBarEl.style.display = 'block';
+  document.getElementById('groupSize').value = GROUP_SIZE;
+
+  const groups = buildGroups(GROUP_SIZE);
+  const hint = document.getElementById('groupHint');
+  if(groups.length<=1){
+    hint.textContent = `총 ${WORDS.length}개 단어가 1개 그룹으로 묶여 있습니다.`;
+  }else{
+    const lastSize = groups[groups.length-1].items.length;
+    hint.textContent = lastSize===GROUP_SIZE
+      ? `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 ${groups.length}개 그룹으로 나눴습니다.`
+      : `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 나누고, 마지막 ${lastSize}개는 별도 그룹으로 묶었습니다. (${groups.length}개 그룹)`;
+  }
+
+  groupListEl.innerHTML = groups.map((g, gi)=>{
+    const openAttr = openGroups.has(gi) ? ' open' : '';
+    return `<div class="group-card${openAttr}" data-gi="${gi}">
+      <div class="group-card-head" data-toggle="${gi}">
+        <div>
+          <div class="group-card-title">그룹 ${gi+1} <span style="color:var(--muted);font-weight:400;">(${g.from}~${g.to}번)</span></div>
+          <div class="group-card-sub">${g.items.length}개 단어</div>
+        </div>
+        <div class="group-card-actions">
+          <button class="group-test-btn" data-testgroup="${gi}">시험보기</button>
+          <span class="group-caret">▸</span>
+        </div>
+      </div>
+      <div class="group-card-body" data-body="${gi}"></div>
+    </div>`;
+  }).join('');
+
+  // 그룹 펼치기/접기
+  groupListEl.querySelectorAll('[data-toggle]').forEach(head=>{
+    head.addEventListener('click', (e)=>{
+      if(e.target.closest('.group-test-btn')) return;
+      const gi = parseInt(head.dataset.toggle, 10);
+      const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+      const isOpen = card.classList.toggle('open');
+      if(isOpen){
+        openGroups.add(gi);
+        const body = card.querySelector('.group-card-body');
+        const g = groups[gi];
+        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+        bindWordDelButtons(body, ()=> renderWordList(''));
+      }else{
+        openGroups.delete(gi);
+      }
+    });
+  });
+
+  // 이미 열려있던 그룹은 내용 채우기
+  openGroups.forEach(gi=>{
+    if(gi>=groups.length) return;
+    const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+    if(!card) return;
+    const body = card.querySelector('.group-card-body');
+    const g = groups[gi];
+    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    bindWordDelButtons(body, ()=> renderWordList(''));
+  });
+
+  // 그룹별 시험보기
+  groupListEl.querySelectorAll('[data-testgroup]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const gi = parseInt(btn.dataset.testgroup, 10);
+      const g = groups[gi];
+      document.querySelector('nav.tabs button[data-tab="test"]').click();
+      startQuiz(shuffle(g.items));
+    });
+  });
+}
+
+const openGroups = new Set();
+
+function renderWordItemHtml(w, realIdx){
+  return `<div class="word-item">
+    <div class="w-num">${realIdx+1}</div>
+    <div class="w-main">
+      <div class="w-en">${escapeHtml(w.word)}</div>
+      <div class="w-kr">${escapeHtml(w.meaning)}</div>
+      ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
+    </div>
+    <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
+  </div>`;
+}
+
+function bindWordDelButtons(container, onDeleted){
+  container.querySelectorAll('.w-del').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx,10);
+      WORDS.splice(idx,1);
+      saveWords(WORDS);
+      onDeleted();
+    });
+  });
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+document.getElementById('searchBox').addEventListener('input', (e)=>{
+  renderWordList(e.target.value);
+});
+
+document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
+  const n = parseInt(document.getElementById('groupSize').value, 10);
+  if(!n || n<1){
+    alert('1 이상의 숫자를 입력해주세요.');
+    return;
+  }
+  GROUP_SIZE = n;
+  saveGroupSize(n);
+  openGroups.clear();
+  renderWordList('');
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  if(WORDS.length===0) return;
+  if(confirm('등록된 단어를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.')){
+    WORDS = [];
+    saveWords(WORDS);
+    openGroups.clear();
+    renderWordList('');
+  }
+});
+
+/* ---------- Manual add ---------- */
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  const w = document.getElementById('addWord').value.trim();
+  const m = document.getElementById('addMeaning').value.trim();
+  const e = document.getElementById('addEtym').value.trim();
+  if(!w || !m){
+    showUploadMsg('영단어와 뜻을 모두 입력해주세요.', 'err');
+    return;
+  }
+  WORDS.push({word:w, meaning:m, etym:e});
+  saveWords(WORDS);
+  renderWordList(document.getElementById('searchBox').value);
+  document.getElementById('addWord').value='';
+  document.getElementById('addMeaning').value='';
+  document.getElementById('addEtym').value='';
+  showUploadMsg(`"${w}" 단어를 추가했습니다.`, 'ok');
+});
+
+/* ---------- Excel upload ---------- */
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', (e)=>{e.preventDefault(); dropZone.classList.add('drag');});
+dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e)=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function showUploadMsg(text, type){
+  const el = document.getElementById('uploadMsg');
+  el.textContent = text;
+  el.className = 'upload-msg show ' + type;
+}
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      let added = 0, skipped = 0;
+
+      wb.SheetNames.forEach(sheetName=>{
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+        if(rows.length < 2) return;
+
+        const header = rows[0].map(h=>String(h||'').toLowerCase());
+        const wordCol = findCol(header, ['영단어','단어','word','english']);
+        const meanCol = findCol(header, ['뜻','정답(뜻)','meaning','뜻(정답)']);
+        const etymCol = findCol(header, ['어원','etymology','etym']);
+
+        if(wordCol===-1 || meanCol===-1) return; // 이 시트는 형식이 안 맞음(테스트/요약 시트일 수 있음)
+
+        for(let i=1;i<rows.length;i++){
+          const row = rows[i];
+          const w = String(row[wordCol]||'').trim();
+          const m = String(row[meanCol]||'').trim();
+          const et = etymCol!==-1 ? String(row[etymCol]||'').trim() : '';
+          if(!w || !m) { continue; }
+          const exists = WORDS.some(x=>x.word.toLowerCase()===w.toLowerCase());
+          if(exists){ skipped++; continue; }
+          WORDS.push({word:w, meaning:m, etym:et});
+          added++;
+        }
+      });
+
+      if(added===0 && skipped===0){
+        showUploadMsg('단어를 찾지 못했습니다. "영단어/단어"와 "뜻" 열이 있는 시트인지 확인해주세요.', 'err');
+        return;
+      }
+      saveWords(WORDS);
+      renderWordList(document.getElementById('searchBox').value);
+      showUploadMsg(`${added}개 단어를 추가했습니다.${skipped? ` (중복 ${skipped}개 제외)`:''}`, 'ok');
+    }catch(err){
+      showUploadMsg('파일을 읽는 중 오류가 발생했습니다: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function findCol(header, keywords){
+  for(let i=0;i<header.length;i++){
+    for(const kw of keywords){
+      if(header[i].includes(kw)) return i;
+    }
+  }
+  return -1;
+}
+
+/* ---------- Test ---------- */
+let quizState = null;
+let testMode = 'count'; // 'count' | 'range'
+
+function resetTestSetup(){
+  const setupEl = document.getElementById('testSetup');
+  const emptyEl = document.getElementById('testEmptyState');
+  document.getElementById('quizArea').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'none';
+
+  if(WORDS.length===0){
+    setupEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  setupEl.style.display = 'block';
+
+  const countSelect = document.getElementById('countSelect');
+  const options = [10,20,30,50, WORDS.length];
+  const finalOptions = [...new Set(options.filter(n=>n<=WORDS.length))];
+  if(finalOptions[finalOptions.length-1] !== WORDS.length) finalOptions.push(WORDS.length);
+
+  countSelect.innerHTML = finalOptions.map((n,i)=>
+    `<button data-n="${n}" class="${i===0?'sel':''}">${n===WORDS.length? '전체 '+n : n}문제</button>`
+  ).join('');
+  countSelect.dataset.selected = finalOptions[0];
+
+  countSelect.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      countSelect.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      countSelect.dataset.selected = b.dataset.n;
+    });
+  });
+
+  document.getElementById('rangeMaxHint').textContent = `등록된 단어: 1 ~ ${WORDS.length}번`;
+  document.getElementById('rangeFrom').value = 1;
+  document.getElementById('rangeTo').value = WORDS.length;
+  document.getElementById('rangeErr').textContent = '';
+
+  // 모드 탭 리스너 (한 번만 바인딩)
+  const tabs = document.getElementById('rangeModeTabs');
+  if(!tabs.dataset.bound){
+    tabs.dataset.bound = '1';
+    tabs.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        testMode = b.dataset.mode;
+        tabs.querySelectorAll('button').forEach(x=>x.classList.remove('mode-sel'));
+        b.classList.add('mode-sel');
+        document.getElementById('modeCount').style.display = testMode==='count' ? 'block':'none';
+        document.getElementById('modeRange').style.display = testMode==='range' ? 'block':'none';
+        document.getElementById('rangeErr').textContent = '';
+      });
+    });
+  }
+}
+
+document.getElementById('startTestBtn').addEventListener('click', ()=>{
+  document.getElementById('rangeErr').textContent = '';
+  if(testMode === 'range'){
+    const from = parseInt(document.getElementById('rangeFrom').value, 10);
+    const to = parseInt(document.getElementById('rangeTo').value, 10);
+    if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length){
+      document.getElementById('rangeErr').textContent = `1 ~ ${WORDS.length} 사이의 번호를 입력해주세요.`;
+      return;
+    }
+    if(from > to){
+      document.getElementById('rangeErr').textContent = '시작 번호가 끝 번호보다 클 수 없습니다.';
+      return;
+    }
+    const orderShuffle = document.querySelector('input[name=rangeOrder]:checked').value === 'shuffle';
+    let pool = WORDS.slice(from-1, to);
+    if(orderShuffle) pool = shuffle(pool);
+    startQuiz(pool);
+  }else{
+    const n = parseInt(document.getElementById('countSelect').dataset.selected || '10', 10);
+    startQuiz(shuffle(WORDS).slice(0, n));
+  }
+});
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function startQuiz(pool){
+  quizState = {
+    items: pool,
+    idx: 0,
+    correct: 0,
+    wrongList: [],
+    answered: false,
+  };
+  document.getElementById('testSetup').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'none';
+  document.getElementById('quizArea').style.display = 'block';
+  renderQuizStep();
+}
+
+function renderQuizStep(){
+  const st = quizState;
+  const total = st.items.length;
+  const cur = st.items[st.idx];
+  const area = document.getElementById('quizArea');
+
+  area.innerHTML = `
+    <div class="quiz-card">
+      <div class="quiz-progress">${st.idx+1} / ${total}</div>
+      <div class="quiz-word">${escapeHtml(cur.word)}</div>
+      <input type="text" id="quizInput" class="quiz-input" placeholder="뜻을 입력하세요" autocomplete="off">
+      <div class="quiz-feedback" id="quizFeedback"></div>
+      <div class="quiz-btns">
+        <button class="btn-primary" id="quizSubmit">확인</button>
+        <button class="btn-ghost" id="quizSkip">모르겠음</button>
+      </div>
+    </div>
+  `;
+
+  const input = document.getElementById('quizInput');
+  input.focus();
+  st.answered = false;
+
+  const submit = ()=> checkAnswer();
+  document.getElementById('quizSubmit').addEventListener('click', submit);
+  document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
+  input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){
+      if(!st.answered) checkAnswer();
+      else nextStep();
+    }
+  });
+}
+
+function normalize(s){
+  return String(s||'').trim().replace(/\s+/g,' ');
+}
+
+// "뜻1, 뜻2" 형태의 정답을 쉼표 기준으로 분리 (괄호 안의 쉼표는 무시)
+function splitMeanings(meaning){
+  const parts = [];
+  let depth = 0, cur = '';
+  for(const ch of String(meaning||'')){
+    if(ch==='('||ch==='['){ depth++; cur+=ch; }
+    else if(ch===')'||ch===']'){ depth=Math.max(0,depth-1); cur+=ch; }
+    else if(ch===',' && depth===0){ parts.push(cur); cur=''; }
+    else{ cur+=ch; }
+  }
+  if(cur.trim()) parts.push(cur);
+  return parts.map(p=>normalize(p)).filter(p=>p.length>0);
+}
+
+function checkAnswer(skip){
+  const st = quizState;
+  if(st.answered) return;
+  st.answered = true;
+  const cur = st.items[st.idx];
+  const input = document.getElementById('quizInput');
+  const userVal = skip ? '' : normalize(input.value);
+  const acceptable = splitMeanings(cur.meaning);
+  const isCorrect = !skip && userVal.length>0 && acceptable.includes(userVal);
+
+  const fb = document.getElementById('quizFeedback');
+  if(isCorrect){
+    st.correct++;
+    input.classList.add('correct');
+    fb.className = 'quiz-feedback correct';
+    fb.textContent = '정답입니다';
+  }else{
+    st.wrongList.push({word:cur.word, meaning:cur.meaning, etym:cur.etym, yours: skip? '(건너뜀)' : (input.value||'(입력 안 함)')});
+    input.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong';
+    fb.innerHTML = `오답입니다 · 정답: <span class="answer-reveal">${escapeHtml(cur.meaning)}</span>`
+      + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
+  }
+  input.disabled = true;
+  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
+  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
+  document.getElementById('quizSubmit').onclick = nextStep;
+  document.getElementById('quizSkip').style.display = 'none';
+}
+
+function nextStep(){
+  const st = quizState;
+  st.idx++;
+  if(st.idx >= st.items.length){
+    showResult();
+  }else{
+    renderQuizStep();
+  }
+}
+
+function showResult(){
+  const st = quizState;
+  document.getElementById('quizArea').style.display = 'none';
+  const area = document.getElementById('resultArea');
+  area.style.display = 'block';
+
+  const total = st.items.length;
+  const pct = Math.round((st.correct/total)*1000)/10;
+  saveAccuracy(pct);
+
+  area.innerHTML = `
+    <div class="result-card">
+      <div class="result-score">${st.correct}<span> / ${total}</span></div>
+      <div class="result-label">정답률 ${pct}%</div>
+      <div class="quiz-btns">
+        <button class="btn-primary" id="retryBtn">다시 테스트</button>
+        ${st.wrongList.length ? `<button class="btn-danger" id="retryWrongBtn">틀린 것만 다시 (${st.wrongList.length}개)</button>` : ''}
+        <button class="btn-ghost" id="backBtn">단어 관리로</button>
+      </div>
+      ${st.wrongList.length ? `
+        <div class="wrong-list">
+          <h3>틀린 단어 (${st.wrongList.length}개)</h3>
+          ${st.wrongList.map(w=>`
+            <div class="wrong-item">
+              <div class="we">${escapeHtml(w.word)}</div>
+              <div class="wm">정답: ${escapeHtml(w.meaning)}</div>
+              <div class="wyours">내 답: ${escapeHtml(w.yours)}</div>
+              ${w.etym ? `<div class="wetym">${escapeHtml(w.etym)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  document.getElementById('retryBtn').addEventListener('click', ()=> resetTestSetup());
+  document.getElementById('backBtn').addEventListener('click', ()=>{
+    document.querySelector('nav.tabs button[data-tab="manage"]').click();
+  });
+  if(st.wrongList.length){
+    document.getElementById('retryWrongBtn').addEventListener('click', ()=>{
+      const pool = st.wrongList.map(w=> WORDS.find(x=>x.word===w.word) || {word:w.word, meaning:w.meaning, etym:w.etym});
+      startQuiz(pool);
+    });
+  }
+}
+
+/* ---------- init ---------- */
+renderStats();
+renderWordList('');
+
+/* ---------- PWA: service worker & install prompt ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+if(!isStandalone() && isIOS()){
+  const hint = document.getElementById('iosHint');
+  if(hint) hint.classList.add('show');
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn && !isStandalone()) btn.style.display = 'inline-flex';
+});
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const btn = document.getElementById('installBtn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    btn.style.display = 'none';
+  });
+});
+
+window.addEventListener('appinstalled', ()=>{
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'none';
+});
+</script>
+</body>
+</html>
