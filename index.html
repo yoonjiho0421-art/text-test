@@ -94,6 +94,35 @@
   }
   .ios-hint.show{display:block;}
 
+  .update-banner{
+    max-width:760px;
+    margin:0 auto;
+    background:var(--ink);
+    color:#fff;
+    border-radius:0 0 12px 12px;
+    padding:10px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    font-size:13px;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .update-banner button{
+    background:#fff;
+    color:var(--ink);
+    border:none;
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:12.5px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    flex:none;
+  }
+
   nav.tabs{
     display:flex;
     gap:6px;
@@ -636,6 +665,11 @@
 <body>
 <div class="wrap">
 
+  <div class="update-banner" id="updateBanner" style="display:none;">
+    <span>새 버전이 있습니다.</span>
+    <button id="updateBtn">지금 업데이트</button>
+  </div>
+
   <header class="top">
     <div class="brand">단어 테스트장 <small>Vocabulary Bench</small></div>
     <div class="stat-row">
@@ -658,7 +692,7 @@
       <h2>엑셀로 단어 추가</h2>
       <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
       <label class="drop" id="dropZone">
-        <input type="file" id="fileInput" accept=".xlsx,.xls" aria-label="엑셀 파일 선택">
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
         <div class="icon">📄</div>
         <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
         <div class="sub">.xlsx / .xls</div>
@@ -666,9 +700,9 @@
       <div class="upload-msg" id="uploadMsg"></div>
 
       <div class="manual-add">
-        <input type="text" id="addWord" placeholder="영단어" aria-label="영단어">
-        <input type="text" id="addMeaning" placeholder="뜻" aria-label="뜻">
-        <input type="text" id="addEtym" placeholder="어원 (선택)" aria-label="어원 (선택)">
+        <input type="text" id="addWord" placeholder="영단어">
+        <input type="text" id="addMeaning" placeholder="뜻">
+        <input type="text" id="addEtym" placeholder="어원 (선택)">
         <button id="addBtn">추가</button>
       </div>
     </div>
@@ -758,17 +792,11 @@ function loadWords(){
   return null;
 }
 function saveWords(words){
-  try{
-    localStorage.setItem(STORE_KEY, JSON.stringify(words));
-  }catch(e){
-    alert('저장에 실패했습니다. 브라우저 저장 공간이 부족하거나 시크릿 모드일 수 있습니다.');
-  }
+  localStorage.setItem(STORE_KEY, JSON.stringify(words));
   renderStats();
 }
 function saveAccuracy(pct){
-  try{
-    localStorage.setItem(HIST_KEY, String(pct));
-  }catch(e){}
+  localStorage.setItem(HIST_KEY, String(pct));
   renderStats();
 }
 
@@ -810,12 +838,11 @@ let GROUP_SIZE = loadGroupSize();
 function buildGroups(size){
   const groups = [];
   for(let i=0;i<WORDS.length;i+=size){
-    const sliceEnd = Math.min(i+size, WORDS.length);
-    const items = [];
-    for(let j=i;j<sliceEnd;j++){
-      items.push(Object.assign({}, WORDS[j], {__idx:j}));
-    }
-    groups.push({ from: i+1, to: sliceEnd, items });
+    groups.push({
+      from: i+1,
+      to: Math.min(i+size, WORDS.length),
+      items: WORDS.slice(i, i+size),
+    });
   }
   return groups;
 }
@@ -841,9 +868,7 @@ function renderWordList(filter){
     // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
-    const filtered = WORDS
-      .map((w,i)=> Object.assign({}, w, {__idx:i}))
-      .filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
 
     if(filtered.length===0){
       searchTestBar.style.display = 'none';
@@ -858,7 +883,7 @@ function renderWordList(filter){
       startQuiz(shuffle(filtered));
     };
 
-    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
+    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
     bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
     return;
   }
@@ -912,7 +937,7 @@ function renderWordList(filter){
         openGroups.add(gi);
         const body = card.querySelector('.group-card-body');
         const g = groups[gi];
-        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
+        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
         bindWordDelButtons(body, ()=> renderWordList(''));
       }else{
         openGroups.delete(gi);
@@ -927,7 +952,7 @@ function renderWordList(filter){
     if(!card) return;
     const body = card.querySelector('.group-card-body');
     const g = groups[gi];
-    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, w.__idx)).join('');
+    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
     bindWordDelButtons(body, ()=> renderWordList(''));
   });
 
@@ -954,7 +979,7 @@ function renderWordItemHtml(w, realIdx){
       <div class="w-kr">${escapeHtml(w.meaning)}</div>
       ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
     </div>
-    <button class="w-del" data-idx="${realIdx}" title="삭제" aria-label="${escapeHtml(w.word)} 삭제">✕</button>
+    <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
   </div>`;
 }
 
@@ -980,8 +1005,8 @@ document.getElementById('searchBox').addEventListener('input', (e)=>{
 
 document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
   const n = parseInt(document.getElementById('groupSize').value, 10);
-  if(!n || n<1 || n>1000){
-    alert('1 이상 1000 이하의 숫자를 입력해주세요.');
+  if(!n || n<1){
+    alert('1 이상의 숫자를 입력해주세요.');
     return;
   }
   GROUP_SIZE = n;
@@ -1065,7 +1090,7 @@ function handleFile(file){
           const m = String(row[meanCol]||'').trim();
           const et = etymCol!==-1 ? String(row[etymCol]||'').trim() : '';
           if(!w || !m) { continue; }
-          const exists = WORDS.some(x=>x.word.toLowerCase()===w.toLowerCase() && x.meaning.toLowerCase()===m.toLowerCase());
+          const exists = WORDS.some(x=>x.word.toLowerCase()===w.toLowerCase());
           if(exists){ skipped++; continue; }
           WORDS.push({word:w, meaning:m, etym:et});
           added++;
@@ -1109,9 +1134,7 @@ function loadGroupResults(){
   return {};
 }
 function saveGroupResults(obj){
-  try{
-    localStorage.setItem(GROUP_RESULT_KEY, JSON.stringify(obj));
-  }catch(e){}
+  localStorage.setItem(GROUP_RESULT_KEY, JSON.stringify(obj));
 }
 function groupKeyOf(size, from, to){
   return `${size}_${from}_${to}`;
@@ -1303,11 +1326,9 @@ function checkAnswer(skip){
       + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
   }
   input.disabled = true;
-  const submitBtn = document.getElementById('quizSubmit');
-  submitBtn.textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  const freshSubmitBtn = submitBtn.cloneNode(true);
-  submitBtn.parentNode.replaceChild(freshSubmitBtn, submitBtn);
-  freshSubmitBtn.addEventListener('click', nextStep);
+  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
+  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
+  document.getElementById('quizSubmit').onclick = nextStep;
   document.getElementById('quizSkip').style.display = 'none';
 }
 
@@ -1384,9 +1405,45 @@ renderStats();
 renderWordList('');
 
 /* ---------- PWA: service worker & install prompt ---------- */
+function showUpdateBanner(reg){
+  const banner = document.getElementById('updateBanner');
+  banner.style.display = 'flex';
+  document.getElementById('updateBtn').onclick = ()=>{
+    if(reg.waiting){
+      reg.waiting.postMessage('SKIP_WAITING');
+    }
+    banner.querySelector('span').textContent = '업데이트 중...';
+    document.getElementById('updateBtn').style.display = 'none';
+  };
+}
+
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register('./sw.js').then((reg)=>{
+      // 이미 대기 중인 새 버전이 있는 경우 (페이지 로드 시점에 이미 감지됨)
+      if(reg.waiting){
+        showUpdateBanner(reg);
+      }
+      // 새 서비스워커가 설치되는 걸 감지
+      reg.addEventListener('updatefound', ()=>{
+        const newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', ()=>{
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            // 기존에 컨트롤하는 워커가 있었는데 새 워커가 설치됨 = 업데이트 있음
+            showUpdateBanner(reg);
+          }
+        });
+      });
+    }).catch(()=>{});
+
+    // 새 워커가 활성화되어 컨트롤을 넘겨받으면 페이지 새로고침
+    let refreshed = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(refreshed) return;
+      refreshed = true;
+      window.location.reload();
+    });
   });
 }
 
