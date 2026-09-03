@@ -1251,17 +1251,34 @@ function startQuiz(pool, groupKey){
   renderQuizStep();
 }
 
+// Enter 키 핸들러는 앱 전체에서 단 한 번만 등록한다.
+// (문제마다 등록/해제를 반복하면 타이밍에 따라 이벤트가 중복 처리될 수 있어
+//  퀴즈 화면이 떠 있는 동안엔 항상 켜져 있고, quizState를 통해 현재 문제를 참조한다.)
+let lastEnterHandledAt = 0;
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter') return;
+  if(e.isComposing) return; // 한글 등 조합 입력 확정 Enter는 무시
+
+  const quizArea = document.getElementById('quizArea');
+  if(!quizArea || quizArea.style.display === 'none') return;
+  if(!quizState) return;
+
+  // 같은 Enter 입력이 짧은 시간 내에 두 번 이상 처리되는 것을 방지
+  const now = Date.now();
+  if(now - lastEnterHandledAt < 200) { e.preventDefault(); return; }
+  lastEnterHandledAt = now;
+
+  e.preventDefault();
+  const st = quizState;
+  if(!st.answered) checkAnswer();
+  else nextStep();
+});
+
 function renderQuizStep(){
   const st = quizState;
   const total = st.items.length;
   const cur = st.items[st.idx];
   const area = document.getElementById('quizArea');
-
-  // 이전 단계에서 등록한 Enter 키 리스너 제거 (중복 등록 방지)
-  if(st._enterHandler){
-    document.removeEventListener('keydown', st._enterHandler);
-    st._enterHandler = null;
-  }
 
   area.innerHTML = `
     <div class="quiz-card">
@@ -1280,26 +1297,8 @@ function renderQuizStep(){
   input.focus();
   st.answered = false;
 
-  const submit = ()=> checkAnswer();
-  document.getElementById('quizSubmit').addEventListener('click', submit);
+  document.getElementById('quizSubmit').addEventListener('click', ()=> checkAnswer());
   document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
-
-  // 한글/일본어 등 조합 입력(IME) 중에는 Enter가 "조합 확정" 용도로도 눌리므로,
-  // 조합이 끝나지 않은 상태에서의 Enter는 무시해서 오작동을 막는다.
-  let composing = false;
-  input.addEventListener('compositionstart', ()=>{ composing = true; });
-  input.addEventListener('compositionend', ()=>{ composing = false; });
-
-  function onEnterKey(e){
-    if(e.key==='Enter'){
-      if(composing || e.isComposing){ return; } // 조합 확정 Enter는 무시
-      e.preventDefault();
-      if(!st.answered) checkAnswer();
-      else nextStep();
-    }
-  }
-  document.addEventListener('keydown', onEnterKey);
-  st._enterHandler = onEnterKey;
 }
 
 function normalize(s){
@@ -1362,10 +1361,6 @@ function nextStep(){
 
 function showResult(){
   const st = quizState;
-  if(st._enterHandler){
-    document.removeEventListener('keydown', st._enterHandler);
-    st._enterHandler = null;
-  }
   document.getElementById('quizArea').style.display = 'none';
   const area = document.getElementById('resultArea');
   area.style.display = 'block';
