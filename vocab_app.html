@@ -94,35 +94,6 @@
   }
   .ios-hint.show{display:block;}
 
-  .update-banner{
-    max-width:760px;
-    margin:0 auto;
-    background:var(--ink);
-    color:#fff;
-    border-radius:0 0 12px 12px;
-    padding:10px 20px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    font-size:13px;
-    position:sticky;
-    top:0;
-    z-index:20;
-  }
-  .update-banner button{
-    background:#fff;
-    color:var(--ink);
-    border:none;
-    border-radius:999px;
-    padding:6px 14px;
-    font-size:12.5px;
-    font-weight:700;
-    font-family:inherit;
-    cursor:pointer;
-    flex:none;
-  }
-
   nav.tabs{
     display:flex;
     gap:6px;
@@ -665,11 +636,6 @@
 <body>
 <div class="wrap">
 
-  <div class="update-banner" id="updateBanner" style="display:none;">
-    <span>새 버전이 있습니다.</span>
-    <button id="updateBtn">지금 업데이트</button>
-  </div>
-
   <header class="top">
     <div class="brand">단어 테스트장 <small>Vocabulary Bench</small></div>
     <div class="stat-row">
@@ -773,7 +739,7 @@
   </section>
 
   <footer class="credit">
-    단어·뜻 출처: 사용자 업로드 자료 · 어원 설명: Claude(Anthropic) 생성 (학술 검증 자료가 아닙니다.)<br>
+    데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
     저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
   </footer>
 </div>
@@ -1462,45 +1428,11 @@ if(IS_FIRST_RUN){
 }
 
 /* ---------- PWA: service worker & install prompt ---------- */
-function showUpdateBanner(reg){
-  const banner = document.getElementById('updateBanner');
-  banner.style.display = 'flex';
-  document.getElementById('updateBtn').onclick = ()=>{
-    if(reg.waiting){
-      reg.waiting.postMessage('SKIP_WAITING');
-    }
-    banner.querySelector('span').textContent = '업데이트 중...';
-    document.getElementById('updateBtn').style.display = 'none';
-  };
-}
-
+// sw.js는 "네트워크 우선" 방식으로 동작해서, 온라인 상태면 늘 최신 index.html을
+// 그대로 보여준다. 그래서 별도의 "새 버전 있음" 알림 없이도 최신 상태가 유지된다.
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').then((reg)=>{
-      // 이미 대기 중인 새 버전이 있는 경우 (페이지 로드 시점에 이미 감지됨)
-      if(reg.waiting){
-        showUpdateBanner(reg);
-      }
-      // 새 서비스워커가 설치되는 걸 감지
-      reg.addEventListener('updatefound', ()=>{
-        const newWorker = reg.installing;
-        if(!newWorker) return;
-        newWorker.addEventListener('statechange', ()=>{
-          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-            // 기존에 컨트롤하는 워커가 있었는데 새 워커가 설치됨 = 업데이트 있음
-            showUpdateBanner(reg);
-          }
-        });
-      });
-    }).catch(()=>{});
-
-    // 새 워커가 활성화되어 컨트롤을 넘겨받으면 페이지 새로고침
-    let refreshed = false;
-    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-      if(refreshed) return;
-      refreshed = true;
-      window.location.reload();
-    });
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
 }
 
