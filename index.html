@@ -849,6 +849,7 @@ function buildGroups(size){
 }
 
 /* ---------- Word list render ---------- */
+const openGroups = new Set();
 function renderWordList(filter){
   const listEl = document.getElementById('wordList');
   const groupListEl = document.getElementById('groupList');
@@ -970,8 +971,6 @@ function renderWordList(filter){
   });
 }
 
-const openGroups = new Set();
-
 function renderWordItemHtml(w, realIdx){
   return `<div class="word-item">
     <div class="w-num">${realIdx+1}</div>
@@ -1079,9 +1078,10 @@ function handleFile(file){
         if(rows.length < 2) return;
 
         const header = rows[0].map(h=>String(h||'').toLowerCase());
-        const wordCol = findCol(header, ['영단어','단어','word','english']);
-        const meanCol = findCol(header, ['뜻','정답(뜻)','meaning','뜻(정답)']);
-        const etymCol = findCol(header, ['어원','etymology','etym']);
+        const excludeCols = ['내가 쓴', '정답 보기', '채점'];
+        const wordCol = findCol(header, ['영단어','단어','word','english'], excludeCols);
+        const meanCol = findCol(header, ['뜻','정답(뜻)','meaning','뜻(정답)'], excludeCols);
+        const etymCol = findCol(header, ['어원','etymology','etym'], excludeCols);
 
         if(wordCol===-1 || meanCol===-1) return; // 이 시트는 형식이 안 맞음(테스트/요약 시트일 수 있음)
 
@@ -1112,9 +1112,12 @@ function handleFile(file){
   reader.readAsArrayBuffer(file);
 }
 
-function findCol(header, keywords){
-  for(let i=0;i<header.length;i++){
-    for(const kw of keywords){
+function findCol(header, keywords, excludeKeywords){
+  // 더 구체적인(긴) 키워드부터 우선 탐색 - "정답(뜻)"이 "뜻"보다 먼저 매칭되도록
+  const sortedKeywords = keywords.slice().sort((a,b)=> b.length - a.length);
+  for(const kw of sortedKeywords){
+    for(let i=0;i<header.length;i++){
+      if(excludeKeywords && excludeKeywords.some(ex=> header[i].includes(ex))) continue;
       if(header[i].includes(kw)) return i;
     }
   }
@@ -1366,7 +1369,7 @@ function showResult(){
   area.style.display = 'block';
 
   const total = st.items.length;
-  const pct = Math.round((st.correct/total)*1000)/10;
+  const pct = total>0 ? Math.round((st.correct/total)*1000)/10 : 0;
   saveAccuracy(pct);
 
   let groupClearedNote = '';
@@ -1491,7 +1494,10 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   if(btn && !isStandalone()) btn.style.display = 'inline-flex';
 });
 
-document.addEventListener('DOMContentLoaded', ()=>{
+// 이 스크립트는 body 하단에 위치해 실행 시점에 이미 DOM 파싱이 끝나 있으므로,
+// DOMContentLoaded를 기다리지 않고 바로 리스너를 건다.
+// (DOMContentLoaded를 기다리면 그 시점엔 이미 이벤트가 지나가 있어 콜백이 실행되지 않는다.)
+(function bindInstallBtn(){
   const btn = document.getElementById('installBtn');
   if(!btn) return;
   btn.addEventListener('click', async ()=>{
@@ -1501,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     deferredInstallPrompt = null;
     btn.style.display = 'none';
   });
-});
+})();
 
 window.addEventListener('appinstalled', ()=>{
   const btn = document.getElementById('installBtn');
