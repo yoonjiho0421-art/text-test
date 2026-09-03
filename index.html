@@ -1284,9 +1284,15 @@ function renderQuizStep(){
   document.getElementById('quizSubmit').addEventListener('click', submit);
   document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
 
-  // input이 disabled 되어도 Enter를 계속 받을 수 있도록 document 레벨에서 감지
+  // 한글/일본어 등 조합 입력(IME) 중에는 Enter가 "조합 확정" 용도로도 눌리므로,
+  // 조합이 끝나지 않은 상태에서의 Enter는 무시해서 오작동을 막는다.
+  let composing = false;
+  input.addEventListener('compositionstart', ()=>{ composing = true; });
+  input.addEventListener('compositionend', ()=>{ composing = false; });
+
   function onEnterKey(e){
     if(e.key==='Enter'){
+      if(composing || e.isComposing){ return; } // 조합 확정 Enter는 무시
       e.preventDefault();
       if(!st.answered) checkAnswer();
       else nextStep();
