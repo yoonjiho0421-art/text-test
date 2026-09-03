@@ -814,6 +814,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='test') resetTestSetup();
+    if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
   });
 });
 
@@ -868,9 +869,7 @@ function renderWordList(filter){
     // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
-    const filtered = WORDS
-      .map((w, idx)=> ({w, idx}))
-      .filter(({w})=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
 
     if(filtered.length===0){
       searchTestBar.style.display = 'none';
@@ -885,7 +884,7 @@ function renderWordList(filter){
       startQuiz(shuffle(filtered));
     };
 
-    listEl.innerHTML = filtered.map(({w, idx})=> renderWordItemHtml(w, idx)).join('');
+    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
     bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
     return;
   }
@@ -907,11 +906,10 @@ function renderWordList(filter){
       : `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 나누고, 마지막 ${lastSize}개는 별도 그룹으로 묶었습니다. (${groups.length}개 그룹)`;
   }
 
-  const groupResultsCache = loadGroupResults();
   groupListEl.innerHTML = groups.map((g, gi)=>{
     const openAttr = openGroups.has(gi) ? ' open' : '';
     const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
-    const cleared = !!groupResultsCache[gKey];
+    const cleared = isGroupCleared(gKey);
     const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
     const clearedClass = cleared ? ' cleared' : '';
     return `<div class="group-card${openAttr}${clearedClass}" data-gi="${gi}">
@@ -940,7 +938,7 @@ function renderWordList(filter){
         openGroups.add(gi);
         const body = card.querySelector('.group-card-body');
         const g = groups[gi];
-        body.innerHTML = g.items.map((w, i)=> renderWordItemHtml(w, g.from-1+i)).join('');
+        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
         bindWordDelButtons(body, ()=> renderWordList(''));
       }else{
         openGroups.delete(gi);
@@ -955,7 +953,7 @@ function renderWordList(filter){
     if(!card) return;
     const body = card.querySelector('.group-card-body');
     const g = groups[gi];
-    body.innerHTML = g.items.map((w, i)=> renderWordItemHtml(w, g.from-1+i)).join('');
+    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
     bindWordDelButtons(body, ()=> renderWordList(''));
   });
 
@@ -1282,13 +1280,9 @@ function renderQuizStep(){
   input.focus();
   st.answered = false;
 
-  const submitBtn = document.getElementById('quizSubmit');
-  const skipBtn = document.getElementById('quizSkip');
-  const onSubmitClick = ()=> checkAnswer();
-  submitBtn.addEventListener('click', onSubmitClick);
-  skipBtn.addEventListener('click', ()=> checkAnswer(true));
-  st._submitClickHandler = onSubmitClick;
-  st._submitBtn = submitBtn;
+  const submit = ()=> checkAnswer();
+  document.getElementById('quizSubmit').addEventListener('click', submit);
+  document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
 
   // input이 disabled 되어도 Enter를 계속 받을 수 있도록 document 레벨에서 감지
   function onEnterKey(e){
@@ -1344,13 +1338,9 @@ function checkAnswer(skip){
       + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
   }
   input.disabled = true;
-  const submitBtn = document.getElementById('quizSubmit');
-  submitBtn.textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  if(st._submitClickHandler){
-    submitBtn.removeEventListener('click', st._submitClickHandler);
-    st._submitClickHandler = null;
-  }
-  submitBtn.onclick = nextStep;
+  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
+  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
+  document.getElementById('quizSubmit').onclick = nextStep;
   document.getElementById('quizSkip').style.display = 'none';
 }
 
