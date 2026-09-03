@@ -868,7 +868,9 @@ function renderWordList(filter){
     // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
-    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
+    const filtered = WORDS
+      .map((w, idx)=> ({w, idx}))
+      .filter(({w})=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
 
     if(filtered.length===0){
       searchTestBar.style.display = 'none';
@@ -883,7 +885,7 @@ function renderWordList(filter){
       startQuiz(shuffle(filtered));
     };
 
-    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    listEl.innerHTML = filtered.map(({w, idx})=> renderWordItemHtml(w, idx)).join('');
     bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
     return;
   }
@@ -905,10 +907,11 @@ function renderWordList(filter){
       : `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 나누고, 마지막 ${lastSize}개는 별도 그룹으로 묶었습니다. (${groups.length}개 그룹)`;
   }
 
+  const groupResultsCache = loadGroupResults();
   groupListEl.innerHTML = groups.map((g, gi)=>{
     const openAttr = openGroups.has(gi) ? ' open' : '';
     const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
-    const cleared = isGroupCleared(gKey);
+    const cleared = !!groupResultsCache[gKey];
     const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
     const clearedClass = cleared ? ' cleared' : '';
     return `<div class="group-card${openAttr}${clearedClass}" data-gi="${gi}">
@@ -937,7 +940,7 @@ function renderWordList(filter){
         openGroups.add(gi);
         const body = card.querySelector('.group-card-body');
         const g = groups[gi];
-        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+        body.innerHTML = g.items.map((w, i)=> renderWordItemHtml(w, g.from-1+i)).join('');
         bindWordDelButtons(body, ()=> renderWordList(''));
       }else{
         openGroups.delete(gi);
@@ -952,7 +955,7 @@ function renderWordList(filter){
     if(!card) return;
     const body = card.querySelector('.group-card-body');
     const g = groups[gi];
-    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
+    body.innerHTML = g.items.map((w, i)=> renderWordItemHtml(w, g.from-1+i)).join('');
     bindWordDelButtons(body, ()=> renderWordList(''));
   });
 
@@ -1256,6 +1259,12 @@ function renderQuizStep(){
   const cur = st.items[st.idx];
   const area = document.getElementById('quizArea');
 
+  // 이전 단계에서 등록한 Enter 키 리스너 제거 (중복 등록 방지)
+  if(st._enterHandler){
+    document.removeEventListener('keydown', st._enterHandler);
+    st._enterHandler = null;
+  }
+
   area.innerHTML = `
     <div class="quiz-card">
       <div class="quiz-progress">${st.idx+1} / ${total}</div>
@@ -1273,15 +1282,24 @@ function renderQuizStep(){
   input.focus();
   st.answered = false;
 
-  const submit = ()=> checkAnswer();
-  document.getElementById('quizSubmit').addEventListener('click', submit);
-  document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
-  input.addEventListener('keydown', (e)=>{
+  const submitBtn = document.getElementById('quizSubmit');
+  const skipBtn = document.getElementById('quizSkip');
+  const onSubmitClick = ()=> checkAnswer();
+  submitBtn.addEventListener('click', onSubmitClick);
+  skipBtn.addEventListener('click', ()=> checkAnswer(true));
+  st._submitClickHandler = onSubmitClick;
+  st._submitBtn = submitBtn;
+
+  // input이 disabled 되어도 Enter를 계속 받을 수 있도록 document 레벨에서 감지
+  function onEnterKey(e){
     if(e.key==='Enter'){
+      e.preventDefault();
       if(!st.answered) checkAnswer();
       else nextStep();
     }
-  });
+  }
+  document.addEventListener('keydown', onEnterKey);
+  st._enterHandler = onEnterKey;
 }
 
 function normalize(s){
@@ -1326,9 +1344,13 @@ function checkAnswer(skip){
       + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
   }
   input.disabled = true;
-  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
-  document.getElementById('quizSubmit').onclick = nextStep;
+  const submitBtn = document.getElementById('quizSubmit');
+  submitBtn.textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
+  if(st._submitClickHandler){
+    submitBtn.removeEventListener('click', st._submitClickHandler);
+    st._submitClickHandler = null;
+  }
+  submitBtn.onclick = nextStep;
   document.getElementById('quizSkip').style.display = 'none';
 }
 
@@ -1344,6 +1366,10 @@ function nextStep(){
 
 function showResult(){
   const st = quizState;
+  if(st._enterHandler){
+    document.removeEventListener('keydown', st._enterHandler);
+    st._enterHandler = null;
+  }
   document.getElementById('quizArea').style.display = 'none';
   const area = document.getElementById('resultArea');
   area.style.display = 'block';
@@ -1367,7 +1393,7 @@ function showResult(){
       <div class="result-label">정답률 ${pct}%</div>
       ${groupClearedNote}
       <div class="quiz-btns">
-        <button class="btn-primary" id="retryBtn">다시 테스트</button>
+        <button class="btn-primary" id="retryBtn">${st.groupKey ? '이 그룹 다시 풀기' : '다시 테스트'}</button>
         ${st.wrongList.length ? `<button class="btn-danger" id="retryWrongBtn">틀린 것만 다시 (${st.wrongList.length}개)</button>` : ''}
         <button class="btn-ghost" id="backBtn">단어 관리로</button>
       </div>
@@ -1387,7 +1413,14 @@ function showResult(){
     </div>
   `;
 
-  document.getElementById('retryBtn').addEventListener('click', ()=> resetTestSetup());
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    if(st.groupKey){
+      // 그룹 시험이었으면 같은 그룹 단어로 즉시 재시작 (groupKey 유지 → 이번에 통과하면 완료 처리)
+      startQuiz(shuffle(st.items), st.groupKey);
+    }else{
+      resetTestSetup();
+    }
+  });
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
     renderWordList(document.getElementById('searchBox').value);
