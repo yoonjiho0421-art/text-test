@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5'; // 새 버전을 배포할 때마다 이 값을 바꾸세요 (v3, v4...)
+const CACHE_VERSION = 'v6'; // 새 버전을 배포할 때마다 이 값을 바꾸세요 (v3, v4...)
 const CACHE_NAME = 'vocab-bench-' + CACHE_VERSION;
 const ASSETS = [
   './',
