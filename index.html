@@ -1279,7 +1279,11 @@ function renderQuizStep(){
 }
 
 function normalize(s){
-  return String(s||'').trim().replace(/\s+/g,' ');
+  return String(s||'')
+    .replace(/[\(（][^)）]*[\)）]/g,'') // 괄호와 그 안의 내용을 통째로 제거 (부가 설명은 안 써도 정답 처리)
+    .replace(/[\[［][^\]］]*[\]］]/g,'')
+    .trim()
+    .replace(/\s+/g,''); // 띄어쓰기 차이는 무시 (공백을 아예 없앰)
 }
 
 // "뜻1, 뜻2" 형태의 정답을 쉼표 기준으로 분리 (괄호 안의 쉼표는 무시)
