@@ -872,7 +872,7 @@ function renderWordList(filter){
 
   groupListEl.innerHTML = groups.map((g, gi)=>{
     const openAttr = openGroups.has(gi) ? ' open' : '';
-    const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
+    const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
     const cleared = isGroupCleared(gKey);
     const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
     const clearedClass = cleared ? ' cleared' : '';
@@ -927,7 +927,7 @@ function renderWordList(filter){
       e.stopPropagation();
       const gi = parseInt(btn.dataset.testgroup, 10);
       const g = groups[gi];
-      const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to);
+      const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
       document.querySelector('nav.tabs button[data-tab="test"]').click();
       startQuiz(shuffle(g.items), gKey);
     });
@@ -1103,7 +1103,9 @@ let quizState = null;
 let testMode = 'count'; // 'count' | 'range'
 
 /* ---------- Group completion tracking ---------- */
-const GROUP_RESULT_KEY = 'vocabBench.groupResults.v1';
+// v2: 그룹 키에 실제 단어 구성까지 포함하도록 바뀌어서, 저장 키 이름도 바꿔
+// 예전(v1) 방식으로 저장된 기록이 새 로직과 뒤섞이지 않게 한다.
+const GROUP_RESULT_KEY = 'vocabBench.groupResults.v2';
 function loadGroupResults(){
   try{
     const raw = localStorage.getItem(GROUP_RESULT_KEY);
@@ -1114,8 +1116,15 @@ function loadGroupResults(){
 function saveGroupResults(obj){
   localStorage.setItem(GROUP_RESULT_KEY, JSON.stringify(obj));
 }
-function groupKeyOf(size, from, to){
-  return `${size}_${from}_${to}`;
+function groupKeyOf(size, from, to, items){
+  // 그룹 크기/범위뿐 아니라 실제 들어있는 단어까지 키에 포함시켜서,
+  // 같은 자리(예: 1~10번)라도 단어 구성이 바뀌면 이전 완료 기록이 이어지지 않게 한다.
+  const wordsFingerprint = (items || []).map(w => w.word.toLowerCase()).join(',');
+  let hash = 0;
+  for(let i=0;i<wordsFingerprint.length;i++){
+    hash = (hash * 31 + wordsFingerprint.charCodeAt(i)) >>> 0;
+  }
+  return `${size}_${from}_${to}_${hash.toString(36)}`;
 }
 function setGroupCleared(key, cleared){
   const results = loadGroupResults();
@@ -1239,6 +1248,11 @@ document.addEventListener('keydown', (e)=>{
   const quizArea = document.getElementById('quizArea');
   if(!quizArea || quizArea.style.display === 'none') return;
   if(!quizState) return;
+
+  // 같은 Enter 입력이 짧은 시간 내에 두 번 이상 처리되는 것을 방지
+  const now = Date.now();
+  if(now - lastEnterHandledAt < 200) { e.preventDefault(); return; }
+  lastEnterHandledAt = now;
 
   e.preventDefault();
   const st = quizState;
