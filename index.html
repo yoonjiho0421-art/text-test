@@ -1240,11 +1240,6 @@ document.addEventListener('keydown', (e)=>{
   if(!quizArea || quizArea.style.display === 'none') return;
   if(!quizState) return;
 
-  // 같은 Enter 입력이 짧은 시간 내에 두 번 이상 처리되는 것을 방지
-  const now = Date.now();
-  if(now - lastEnterHandledAt < 200) { e.preventDefault(); return; }
-  lastEnterHandledAt = now;
-
   e.preventDefault();
   const st = quizState;
   if(!st.answered) checkAnswer();
