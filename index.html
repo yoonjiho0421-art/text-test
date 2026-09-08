@@ -94,6 +94,121 @@
   }
   .ios-hint.show{display:block;}
 
+  /* ---------- Deck home ---------- */
+  .deck-intro{
+    margin:20px 0 16px;
+  }
+  .deck-intro p{
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.6;
+    margin:0;
+  }
+  .deck-create-card{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+  }
+  .deck-create-card input{
+    flex:1;
+    padding:11px 14px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+  }
+  .deck-create-card button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:11px 18px;
+    font-size:14px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    flex:none;
+  }
+  .deck-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .deck-card:hover{border-color:var(--accent);}
+  .deck-card-main{flex:1; min-width:0;}
+  .deck-card-name{
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .deck-card-meta{
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .deck-card-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:none;
+  }
+  .deck-rename-btn, .deck-delete-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:6px 10px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:inherit;
+    color:var(--muted);
+  }
+  .deck-delete-btn{color:var(--bad);}
+  .deck-empty{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+    font-size:13.5px;
+    line-height:1.7;
+  }
+
+  /* ---------- Deck app header ---------- */
+  .deck-app-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:18px;
+    margin-bottom:4px;
+  }
+  .back-to-home-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 13px;
+    font-size:13px;
+    color:var(--muted);
+    cursor:pointer;
+    font-family:inherit;
+    flex:none;
+  }
+  .deck-app-title{
+    font-size:15px;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
   nav.tabs{
     display:flex;
     gap:6px;
@@ -637,8 +752,8 @@
 <div class="wrap">
 
   <header class="top">
-    <div class="brand">단어 테스트장 <small>Vocabulary Bench</small></div>
-    <div class="stat-row">
+    <div class="brand"><span id="brandTitle">단어 테스트장</span> <small>Vocabulary Bench</small></div>
+    <div class="stat-row" id="statRow">
       <div class="stat-pill">총 단어 <b id="statTotal">0</b>개</div>
       <div class="stat-pill">최근 정답률 <b id="statAcc">-</b></div>
       <button id="installBtn" class="install-btn" style="display:none;">홈 화면에 추가</button>
@@ -646,57 +761,79 @@
     <div class="ios-hint" id="iosHint">Safari에서는 <b>공유 버튼</b> → <b>홈 화면에 추가</b>로 앱처럼 설치할 수 있습니다.</div>
   </header>
 
-  <nav class="tabs">
-    <button data-tab="manage" class="active">단어 관리</button>
-    <button data-tab="test">테스트</button>
-  </nav>
-
-  <!-- ===== 단어 관리 ===== -->
-  <section class="panel active" id="panel-manage">
-
-    <div class="upload-card">
-      <h2>엑셀로 단어 추가</h2>
-      <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
-      <label class="drop" id="dropZone">
-        <input type="file" id="fileInput" accept=".xlsx,.xls">
-        <div class="icon">📄</div>
-        <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
-        <div class="sub">.xlsx / .xls</div>
-      </label>
-      <div class="upload-msg" id="uploadMsg"></div>
-
-      <div class="manual-add">
-        <input type="text" id="addWord" placeholder="영단어">
-        <input type="text" id="addMeaning" placeholder="뜻">
-        <input type="text" id="addEtym" placeholder="어원 (선택)">
-        <button id="addBtn">추가</button>
-      </div>
+  <!-- ===== 단어장 홈 (덱 선택 화면) ===== -->
+  <section class="panel active" id="panel-deckhome">
+    <div class="deck-intro">
+      <p>단어장을 선택하거나 새로 만들어보세요. 각 단어장은 단어·그룹·완료 기록이 서로 독립적으로 관리됩니다.</p>
     </div>
 
-    <div class="list-toolbar">
-      <input type="text" id="searchBox" placeholder="단어 검색...">
-      <button class="clear-all" id="clearAllBtn">전체 삭제</button>
+    <div class="deck-create-card">
+      <input type="text" id="newDeckName" placeholder="새 단어장 이름 (예: 학교단어)" maxlength="40">
+      <button id="createDeckBtn">단어장 만들기</button>
     </div>
 
-    <div class="group-bar" id="groupBar">
-      <div class="group-bar-row">
-        <label for="groupSize">그룹 크기</label>
-        <input type="number" id="groupSize" min="1" value="10">
-        <span>개씩</span>
-        <button id="groupApplyBtn" class="group-apply-btn">그룹 나누기</button>
-      </div>
-      <div class="group-bar-hint" id="groupHint"></div>
-    </div>
-
-    <div id="searchTestBar" class="search-test-bar" style="display:none;">
-      <span id="searchTestCount"></span>
-      <button id="searchTestBtn" class="search-test-btn">이 결과로 시험보기</button>
-    </div>
-
-    <div id="groupList"></div>
-
-    <div id="wordList"></div>
+    <div id="deckList"></div>
   </section>
+
+  <!-- ===== 단어장 내부 (기존 앱 화면) ===== -->
+  <section class="panel" id="panel-deckapp">
+
+    <div class="deck-app-header">
+      <button id="backToHomeBtn" class="back-to-home-btn">← 단어장 목록</button>
+      <div class="deck-app-title" id="deckAppTitle"></div>
+    </div>
+
+    <nav class="tabs">
+      <button data-tab="manage" class="active">단어 관리</button>
+      <button data-tab="test">테스트</button>
+    </nav>
+
+    <!-- ===== 단어 관리 ===== -->
+    <section class="panel active" id="panel-manage">
+
+      <div class="upload-card">
+        <h2>엑셀로 단어 추가</h2>
+        <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
+        <label class="drop" id="dropZone">
+          <input type="file" id="fileInput" accept=".xlsx,.xls">
+          <div class="icon">📄</div>
+          <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
+          <div class="sub">.xlsx / .xls</div>
+        </label>
+        <div class="upload-msg" id="uploadMsg"></div>
+
+        <div class="manual-add">
+          <input type="text" id="addWord" placeholder="영단어">
+          <input type="text" id="addMeaning" placeholder="뜻">
+          <input type="text" id="addEtym" placeholder="어원 (선택)">
+          <button id="addBtn">추가</button>
+        </div>
+      </div>
+
+      <div class="list-toolbar">
+        <input type="text" id="searchBox" placeholder="단어 검색...">
+        <button class="clear-all" id="clearAllBtn">전체 삭제</button>
+      </div>
+
+      <div class="group-bar" id="groupBar">
+        <div class="group-bar-row">
+          <label for="groupSize">그룹 크기</label>
+          <input type="number" id="groupSize" min="1" value="10">
+          <span>개씩</span>
+          <button id="groupApplyBtn" class="group-apply-btn">그룹 나누기</button>
+        </div>
+        <div class="group-bar-hint" id="groupHint"></div>
+      </div>
+
+      <div id="searchTestBar" class="search-test-bar" style="display:none;">
+        <span id="searchTestCount"></span>
+        <button id="searchTestBtn" class="search-test-btn">이 결과로 시험보기</button>
+      </div>
+
+      <div id="groupList"></div>
+
+      <div id="wordList"></div>
+    </section>
 
   <!-- ===== 테스트 ===== -->
   <section class="panel" id="panel-test">
@@ -736,6 +873,7 @@
     <div id="quizArea" style="display:none;"></div>
     <div id="resultArea" style="display:none;"></div>
 
+    </section>
   </section>
 
   <footer class="credit">
@@ -745,36 +883,236 @@
 </div>
 
 <script>
-const SEED_WORDS = [];
-/* ---------- Storage ---------- */
-const STORE_KEY = 'vocabBench.words.v1';
-const HIST_KEY = 'vocabBench.lastAccuracy.v1';
+/* =====================================================================
+   Deck (단어장) system
+   여러 개의 독립된 단어장을 만들고 전환할 수 있게 한다.
+   각 단어장의 단어/그룹설정/완료기록/정답률은 덱 ID별로 완전히 분리 저장된다.
+   ===================================================================== */
+const DECKS_KEY = 'vocabBench.decks.v1';
+const CURRENT_DECK_KEY = 'vocabBench.currentDeck.v1';
+
+function loadDecks(){
+  try{
+    const raw = localStorage.getItem(DECKS_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return [];
+}
+function saveDecks(decks){
+  localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+}
+function makeDeckId(){
+  return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function getCurrentDeckId(){
+  return localStorage.getItem(CURRENT_DECK_KEY);
+}
+function setCurrentDeckId(id){
+  if(id) localStorage.setItem(CURRENT_DECK_KEY, id);
+  else localStorage.removeItem(CURRENT_DECK_KEY);
+}
+
+let DECKS = loadDecks();
+let CURRENT_DECK_ID = null;
+
+// 이전 버전(단어장 개념이 없던 시절) 사용자를 위한 1회성 마이그레이션:
+// 예전 방식으로 저장돼 있던 단어/설정이 있으면 "기본 단어장"으로 자동 변환한다.
+(function migrateLegacyDataIfNeeded(){
+  if(DECKS.length > 0) return; // 이미 단어장이 있으면 마이그레이션 불필요
+  const legacyWordsRaw = localStorage.getItem('vocabBench.words.v1');
+  if(!legacyWordsRaw) return;
+  try{
+    const legacyWords = JSON.parse(legacyWordsRaw);
+    if(!Array.isArray(legacyWords) || legacyWords.length===0) return;
+
+    const id = makeDeckId();
+    DECKS = [{ id, name: '기본 단어장', createdAt: Date.now() }];
+    saveDecks(DECKS);
+
+    localStorage.setItem(deckScopedKey('vocabBench.words.v1', id), legacyWordsRaw);
+    ['vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
+      const v = localStorage.getItem(k);
+      if(v!==null) localStorage.setItem(deckScopedKey(k, id), v);
+    });
+  }catch(e){}
+})();
+
+function deckScopedKey(baseKey, deckId){
+  return baseKey + '.deck.' + deckId;
+}
+
+function renderDeckList(){
+  const el = document.getElementById('deckList');
+  if(DECKS.length===0){
+    el.innerHTML = '<div class="deck-empty">아직 단어장이 없습니다.<br>위에서 이름을 입력하고 새 단어장을 만들어보세요.</div>';
+    return;
+  }
+  el.innerHTML = DECKS.map(d=>{
+    const wordCount = countWordsInDeck(d.id);
+    return `<div class="deck-card" data-deck="${d.id}">
+      <div class="deck-card-main">
+        <div class="deck-card-name">${escapeHtml(d.name)}</div>
+        <div class="deck-card-meta">${wordCount}개 단어</div>
+      </div>
+      <div class="deck-card-actions">
+        <button class="deck-rename-btn" data-rename="${d.id}">이름변경</button>
+        <button class="deck-delete-btn" data-delete="${d.id}">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.deck-card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('button')) return;
+      openDeck(card.dataset.deck);
+    });
+  });
+  el.querySelectorAll('[data-rename]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = btn.dataset.rename;
+      const deck = DECKS.find(d=>d.id===id);
+      const newName = prompt('새 이름을 입력하세요.', deck ? deck.name : '');
+      if(newName && newName.trim()){
+        deck.name = newName.trim().slice(0,40);
+        saveDecks(DECKS);
+        renderDeckList();
+      }
+    });
+  });
+  el.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = btn.dataset.delete;
+      const deck = DECKS.find(d=>d.id===id);
+      if(!confirm(`"${deck ? deck.name : ''}" 단어장을 삭제할까요?\n단어, 그룹 설정, 완료 기록이 모두 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+      ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
+        localStorage.removeItem(deckScopedKey(k, id));
+      });
+      DECKS = DECKS.filter(d=>d.id!==id);
+      saveDecks(DECKS);
+      renderDeckList();
+    });
+  });
+}
+
+function countWordsInDeck(deckId){
+  try{
+    const raw = localStorage.getItem(deckScopedKey('vocabBench.words.v1', deckId));
+    if(!raw) return 0;
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.length : 0;
+  }catch(e){ return 0; }
+}
+
+document.getElementById('createDeckBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('newDeckName');
+  const name = input.value.trim();
+  if(!name){
+    alert('단어장 이름을 입력해주세요.');
+    return;
+  }
+  const id = makeDeckId();
+  DECKS.push({ id, name: name.slice(0,40), createdAt: Date.now() });
+  saveDecks(DECKS);
+  input.value = '';
+  renderDeckList();
+});
+document.getElementById('newDeckName').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('createDeckBtn').click();
+});
+
+document.getElementById('backToHomeBtn').addEventListener('click', ()=>{
+  closeDeck();
+});
+
+function openDeck(deckId){
+  CURRENT_DECK_ID = deckId;
+  setCurrentDeckId(deckId);
+  const deck = DECKS.find(d=>d.id===deckId);
+  document.getElementById('deckAppTitle').textContent = deck ? deck.name : '';
+  document.getElementById('brandTitle').textContent = deck ? deck.name : '단어 테스트장';
+  document.getElementById('statRow').style.display = 'flex';
+
+  document.getElementById('panel-deckhome').classList.remove('active');
+  document.getElementById('panel-deckapp').classList.add('active');
+
+  loadDeckData();
+  renderStats();
+  renderWordList('');
+  // 항상 "단어 관리" 탭을 기본으로 보여준다.
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('nav.tabs button[data-tab="manage"]').classList.add('active');
+  document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-manage').classList.add('active');
+}
+
+function closeDeck(){
+  CURRENT_DECK_ID = null;
+  setCurrentDeckId(null);
+  document.getElementById('brandTitle').textContent = '단어 테스트장';
+  document.getElementById('statRow').style.display = 'none';
+  document.getElementById('panel-deckapp').classList.remove('active');
+  document.getElementById('panel-deckhome').classList.add('active');
+  renderDeckList();
+}
+
+/* ---------- Storage (현재 열린 단어장 기준으로 동적 키 사용) ---------- */
+function STORE_KEY(){ return deckScopedKey('vocabBench.words.v1', CURRENT_DECK_ID); }
+function HIST_KEY(){ return deckScopedKey('vocabBench.lastAccuracy.v1', CURRENT_DECK_ID); }
 
 function loadWords(){
   try{
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(STORE_KEY());
     if(raw) return JSON.parse(raw);
   }catch(e){}
   return null;
 }
 function saveWords(words){
-  localStorage.setItem(STORE_KEY, JSON.stringify(words));
+  localStorage.setItem(STORE_KEY(), JSON.stringify(words));
   renderStats();
 }
 function saveAccuracy(pct){
-  localStorage.setItem(HIST_KEY, String(pct));
+  localStorage.setItem(HIST_KEY(), String(pct));
   renderStats();
 }
 
-let WORDS = loadWords() || [];
-const IS_FIRST_RUN = !localStorage.getItem(STORE_KEY);
+let WORDS = [];
+let IS_FIRST_RUN = false;
+
+function loadDeckData(){
+  WORDS = loadWords() || [];
+  IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
+  GROUP_SIZE = loadGroupSize();
+  openGroups.clear();
+
+  // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
+  if(IS_FIRST_RUN){
+    fetch('./words.xlsx')
+      .then(res=>{
+        if(!res.ok) throw new Error('words.xlsx not found');
+        return res.arrayBuffer();
+      })
+      .then(buf=>{
+        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+        const { added } = parseWordsFromWorkbook(wb, WORDS);
+        if(added.length===0) return;
+        WORDS.push(...added);
+        saveWords(WORDS);
+        renderWordList(document.getElementById('searchBox').value);
+      })
+      .catch(()=>{
+        // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
+      });
+  }
+}
 
 /* ---------- Tabs ---------- */
 document.querySelectorAll('nav.tabs button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='test') resetTestSetup();
     if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
@@ -784,20 +1122,20 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
 /* ---------- Stats ---------- */
 function renderStats(){
   document.getElementById('statTotal').textContent = WORDS.length;
-  const acc = localStorage.getItem(HIST_KEY);
+  const acc = localStorage.getItem(HIST_KEY());
   document.getElementById('statAcc').textContent = acc ? acc+'%' : '-';
 }
 
 /* ---------- Group size setting ---------- */
-const GROUP_KEY = 'vocabBench.groupSize.v1';
+function GROUP_KEY(){ return deckScopedKey('vocabBench.groupSize.v1', CURRENT_DECK_ID); }
 function loadGroupSize(){
-  const v = parseInt(localStorage.getItem(GROUP_KEY) || '10', 10);
+  const v = parseInt(localStorage.getItem(GROUP_KEY()) || '10', 10);
   return (v && v>0) ? v : 10;
 }
 function saveGroupSize(n){
-  localStorage.setItem(GROUP_KEY, String(n));
+  localStorage.setItem(GROUP_KEY(), String(n));
 }
-let GROUP_SIZE = loadGroupSize();
+let GROUP_SIZE = 10;
 
 function buildGroups(size){
   const groups = [];
@@ -1105,16 +1443,16 @@ let testMode = 'count'; // 'count' | 'range'
 /* ---------- Group completion tracking ---------- */
 // v2: 그룹 키에 실제 단어 구성까지 포함하도록 바뀌어서, 저장 키 이름도 바꿔
 // 예전(v1) 방식으로 저장된 기록이 새 로직과 뒤섞이지 않게 한다.
-const GROUP_RESULT_KEY = 'vocabBench.groupResults.v2';
+function GROUP_RESULT_KEY(){ return deckScopedKey('vocabBench.groupResults.v2', CURRENT_DECK_ID); }
 function loadGroupResults(){
   try{
-    const raw = localStorage.getItem(GROUP_RESULT_KEY);
+    const raw = localStorage.getItem(GROUP_RESULT_KEY());
     if(raw) return JSON.parse(raw);
   }catch(e){}
   return {};
 }
 function saveGroupResults(obj){
-  localStorage.setItem(GROUP_RESULT_KEY, JSON.stringify(obj));
+  localStorage.setItem(GROUP_RESULT_KEY(), JSON.stringify(obj));
 }
 function groupKeyOf(size, from, to, items){
   // 그룹 크기/범위뿐 아니라 실제 들어있는 단어까지 키에 포함시켜서,
@@ -1419,30 +1757,18 @@ function showResult(){
 }
 
 /* ---------- init ---------- */
-renderStats();
-renderWordList('');
-
-// 브라우저에 저장된 단어가 하나도 없는 첫 실행이면, 저장소에 함께 올려둔
-// words.xlsx 파일을 자동으로 불러와 기본 단어장으로 채운다.
-// (words.xlsx가 없거나 못 불러와도 조용히 무시하고 빈 상태로 남는다.)
-if(IS_FIRST_RUN){
-  fetch('./words.xlsx')
-    .then(res=>{
-      if(!res.ok) throw new Error('words.xlsx not found');
-      return res.arrayBuffer();
-    })
-    .then(buf=>{
-      const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-      const { added } = parseWordsFromWorkbook(wb, WORDS);
-      if(added.length===0) return;
-      WORDS.push(...added);
-      saveWords(WORDS);
-      renderWordList(document.getElementById('searchBox').value);
-    })
-    .catch(()=>{
-      // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
-    });
-}
+// 단어장 시스템 진입점: 이전에 열어뒀던 단어장이 있으면 바로 그 안으로 들어가고,
+// 없으면 단어장 목록(홈 화면)을 보여준다.
+(function initApp(){
+  const lastDeckId = getCurrentDeckId();
+  const lastDeckExists = lastDeckId && DECKS.some(d=>d.id===lastDeckId);
+  if(lastDeckExists){
+    openDeck(lastDeckId);
+  }else{
+    document.getElementById('statRow').style.display = 'none';
+    renderDeckList();
+  }
+})();
 
 /* ---------- PWA: service worker & install prompt ---------- */
 // sw.js는 "네트워크 우선" 방식으로 동작해서, 온라인 상태면 늘 최신 index.html을
