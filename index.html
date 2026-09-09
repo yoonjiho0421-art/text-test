@@ -697,6 +697,7 @@
     position:absolute;
     opacity:0;
     pointer-events:none;
+    outline:none;
   }
   .acc-scope-card:has(input:checked){
     border-color:var(--accent);
@@ -751,6 +752,14 @@
     font-family:inherit;
     padding:5px 0;
     -moz-appearance:textfield;
+    outline:none; /* 기본 파란 포커스 링 제거 - 카드 강조색과 겹쳐 산만해 보이는 것을 방지 */
+    background:transparent;
+  }
+  .stepper input[type=number]:focus{
+    background:var(--accent-soft);
+  }
+  .stepper-btn:focus{
+    outline:none;
   }
   .stepper input[type=number]::-webkit-outer-spin-button,
   .stepper input[type=number]::-webkit-inner-spin-button{
@@ -807,6 +816,7 @@
     font-size:11px;
     color:var(--muted);
     margin-top:6px;
+    padding:0 10px; /* 슬라이더 손잡이(20px) 반지름만큼 여백을 줘서 0%/100% 라벨이 실제 손잡이 이동 범위와 맞도록 함 */
   }
   .acc-hint{
     font-size:12px;
