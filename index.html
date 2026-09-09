@@ -2281,14 +2281,14 @@ function normalize(s){
     .replace(/\s+/g,''); // 띄어쓰기 차이는 무시 (공백을 아예 없앰)
 }
 
-// "뜻1, 뜻2" 형태의 정답을 쉼표 기준으로 분리 (괄호 안의 쉼표는 무시)
+// "뜻1, 뜻2" 또는 "뜻1; 뜻2" 형태의 정답을 쉼표/세미콜론 기준으로 분리 (괄호 안의 구분자는 무시)
 function splitMeanings(meaning){
   const parts = [];
   let depth = 0, cur = '';
   for(const ch of String(meaning||'')){
     if(ch==='('||ch==='['){ depth++; cur+=ch; }
     else if(ch===')'||ch===']'){ depth=Math.max(0,depth-1); cur+=ch; }
-    else if(ch===',' && depth===0){ parts.push(cur); cur=''; }
+    else if((ch===',' || ch===';') && depth===0){ parts.push(cur); cur=''; }
     else{ cur+=ch; }
   }
   if(cur.trim()) parts.push(cur);
