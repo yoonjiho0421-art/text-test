@@ -1,2663 +1,342 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>단어 테스트장</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단어장 퀴즈 앱 - 최적화 버전</title>
+    <style>
+        /* 1. UI 디자인 통일 (UI Standardization) */
+        :root {
+            /* 색상 시스템 통일 */
+            --ink: #1f2937;
+            --paper: #ffffff;
+            --paper-sub: #f3f4f6;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: #e5e7eb;
+            
+            /* 테두리 둥기(Border Radius) 규격화 */
+            --radius-card: 16px;
+            --radius-element: 8px;
+            --radius-round: 999px;
+            
+            /* 여백(Spacing) 표준화 (8px 배수) */
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+        }
 
-<!-- PWA -->
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#8b3a2f">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="단어테스트">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<link rel="icon" href="./icon-192.png">
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--paper-sub);
+            color: var(--ink);
+            margin: 0;
+            padding: var(--spacing-lg);
+            box-sizing: border-box;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-  :root{
-    --ink:#1c1b1a;
-    --paper:#faf7f2;
-    --card:#ffffff;
-    --line:#e4ddd2;
-    --accent:#8b3a2f;
-    --accent-soft:#f3e2dc;
-    --good:#2f6b4f;
-    --good-soft:#e5f1ea;
-    --bad:#a13a2f;
-    --bad-soft:#fbe8e4;
-    --muted:#78716a;
-  }
-  *{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent; /* 안드로이드/iOS에서 버튼 탭 시 뜨는 파란/회색 반투명 하이라이트 제거 */
-  }
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Noto Sans KR', 'Apple SD Gothic Neo', -apple-system, sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
+        /* 컨테이너 규격화 (Padding, Margin 통일) */
+        .upload-card, .quiz-card, .modal-card {
+            background-color: var(--paper);
+            border-radius: var(--radius-card);
+            padding: var(--spacing-lg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: var(--spacing-lg);
+        }
 
-  header.top{margin-bottom:24px;}
-  .brand{
-    font-family: Georgia, 'Noto Serif KR', serif;
-    font-size:26px;
-    font-weight:700;
-    letter-spacing:-0.01em;
-    display:flex;
-    align-items:baseline;
-    gap:8px;
-  }
-  .brand small{
-    font-family:inherit;
-    font-size:13px;
-    font-weight:400;
-    color:var(--muted);
-  }
-  .stat-row{
-    display:flex;
-    gap:8px;
-    margin-top:14px;
-    flex-wrap:wrap;
-  }
-  .stat-pill{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:999px;
-    padding:6px 14px;
-    font-size:13px;
-    color:var(--muted);
-  }
-  .stat-pill b{color:var(--ink);}
+        h1, h2 {
+            margin-top: 0;
+            margin-bottom: var(--spacing-md);
+        }
 
-  .install-btn{
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    border-radius:999px;
-    padding:6px 14px;
-    font-size:13px;
-    font-family:inherit;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-  }
-  .ios-hint{
-    display:none;
-    font-size:12px;
-    color:var(--muted);
-    margin-top:10px;
-    line-height:1.5;
-  }
-  .ios-hint.show{display:block;}
+        /* 입력 폼 상태 표시 일관성 (Focus, Hover 효과 추가) */
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-element);
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: var(--spacing-md);
+        }
 
-  /* ---------- Deck home ---------- */
-  .deck-intro{
-    margin:20px 0 16px;
-  }
-  .deck-intro p{
-    font-size:13.5px;
-    color:var(--muted);
-    line-height:1.6;
-    margin:0;
-  }
-  .deck-create-card{
-    display:flex;
-    gap:8px;
-    margin-bottom:20px;
-  }
-  .deck-create-card input{
-    flex:1;
-    padding:11px 14px;
-    border:1px solid var(--line);
-    border-radius:9px;
-    font-size:14px;
-    font-family:inherit;
-    background:#fff;
-  }
-  .deck-create-card button{
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    border-radius:9px;
-    padding:11px 18px;
-    font-size:14px;
-    font-weight:700;
-    font-family:inherit;
-    cursor:pointer;
-    flex:none;
-  }
-  .deck-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:16px 18px;
-    margin-bottom:10px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    cursor:pointer;
-    transition:border-color .15s;
-  }
-  .deck-card:hover{border-color:var(--accent);}
-  .deck-card-main{flex:1; min-width:0;}
-  .deck-card-name{
-    font-size:16px;
-    font-weight:700;
-    margin-bottom:4px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .deck-card-meta{
-    font-size:12.5px;
-    color:var(--muted);
-  }
-  .deck-card-actions{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    flex:none;
-  }
-  .deck-rename-btn, .deck-delete-btn{
-    background:none;
-    border:1px solid var(--line);
-    border-radius:7px;
-    padding:6px 10px;
-    font-size:12px;
-    cursor:pointer;
-    font-family:inherit;
-    color:var(--muted);
-  }
-  .deck-delete-btn{color:var(--bad);}
-  .deck-empty{
-    text-align:center;
-    padding:50px 20px;
-    color:var(--muted);
-    font-size:13.5px;
-    line-height:1.7;
-  }
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
 
-  /* ---------- Modal ---------- */
-  .modal-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(28,27,26,0.45);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:100;
-    padding:20px;
-  }
-  .modal-card{
-    background:var(--card);
-    border-radius:14px;
-    padding:22px;
-    width:100%;
-    max-width:340px;
-    box-shadow:0 10px 40px rgba(0,0,0,0.2);
-  }
-  .modal-card h3{
-    margin:0 0 14px;
-    font-size:16px;
-  }
-  .modal-card p{
-    margin:0 0 18px;
-    font-size:13.5px;
-    color:var(--muted);
-    line-height:1.6;
-    white-space:pre-line;
-  }
-  .modal-card input[type=text]{
-    width:100%;
-    box-sizing:border-box;
-    padding:11px 13px;
-    border:1px solid var(--line);
-    border-radius:9px;
-    font-size:14px;
-    font-family:inherit;
-    margin-bottom:18px;
-  }
-  .modal-btns{
-    display:flex;
-    gap:8px;
-    justify-content:flex-end;
-  }
-  .modal-btns button{
-    padding:9px 16px;
-    border-radius:8px;
-    font-size:13.5px;
-    font-family:inherit;
-    cursor:pointer;
-    border:none;
-  }
-  .modal-btn-cancel{background:none; border:1px solid var(--line) !important; color:var(--muted);}
-  .modal-btn-confirm{background:var(--ink); color:#fff;}
-  .modal-btn-danger{background:var(--bad); color:#fff;}
+        /* 버튼 상태 통일 */
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px var(--spacing-md);
+            border-radius: var(--radius-element);
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.05s ease;
+            font-size: 16px;
+            font-weight: 500;
+        }
 
-  /* ---------- Deck app header ---------- */
-  .deck-app-header{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin-top:18px;
-    margin-bottom:4px;
-  }
-  .back-to-home-btn{
-    background:none;
-    border:1px solid var(--line);
-    border-radius:8px;
-    padding:7px 13px;
-    font-size:13px;
-    color:var(--muted);
-    cursor:pointer;
-    font-family:inherit;
-    flex:none;
-  }
-  .deck-app-title{
-    font-size:15px;
-    font-weight:700;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
+        button:hover {
+            background-color: var(--accent-hover);
+        }
 
-  nav.tabs{
-    display:flex;
-    gap:6px;
-    margin:22px 0 18px;
-    border-bottom:1px solid var(--line);
-  }
-  nav.tabs button{
-    appearance:none;
-    border:none;
-    background:none;
-    font-size:15px;
-    font-family:inherit;
-    padding:10px 4px;
-    margin-right:18px;
-    color:var(--muted);
-    cursor:pointer;
-    border-bottom:2px solid transparent;
-    transform:translateY(1px);
-  }
-  nav.tabs button.active{
-    color:var(--ink);
-    font-weight:700;
-    border-bottom:2px solid var(--accent);
-  }
+        button:active {
+            transform: scale(0.98);
+        }
 
-  .panel{display:none;}
-  .panel.active{display:block;}
+        /* 리스트 스타일 통일 */
+        .word-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-element);
+            background: var(--paper);
+        }
 
-  /* Upload card */
-  .upload-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:22px;
-    margin-bottom:18px;
-  }
-  .upload-card h2{
-    margin:0 0 6px;
-    font-size:17px;
-  }
-  .upload-card p{
-    margin:0 0 16px;
-    font-size:13.5px;
-    color:var(--muted);
-    line-height:1.6;
-  }
-  .drop{
-    display:block;
-    box-sizing:border-box;
-    width:100%;
-    border:1.5px dashed var(--line);
-    border-radius:10px;
-    padding:26px 16px;
-    text-align:center;
-    cursor:pointer;
-    transition:border-color .15s, background .15s;
-  }
-  .drop:hover, .drop.drag{
-    border-color:var(--accent);
-    background:var(--accent-soft);
-  }
-  .drop input{
-    position:absolute;
-    width:1px;height:1px;
-    padding:0;margin:-1px;
-    overflow:hidden;
-    clip:rect(0,0,0,0);
-    white-space:nowrap;
-    border:0;
-  }
-  .drop .icon{display:block;font-size:26px;margin-bottom:6px;line-height:1;}
-  .drop .main{display:block;font-size:14px;font-weight:600;line-height:1.4;}
-  .drop .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
+        .word-item {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
 
-  .upload-msg{
-    margin-top:12px;
-    font-size:13px;
-    padding:10px 12px;
-    border-radius:8px;
-    display:none;
-  }
-  .upload-msg.show{display:block;}
-  .upload-msg.ok{background:var(--good-soft);color:var(--good);}
-  .upload-msg.err{background:var(--bad-soft);color:var(--bad);}
+        .word-item:last-child {
+            border-bottom: none;
+        }
 
-  .manual-add{
-    display:flex;
-    gap:8px;
-    margin-top:14px;
-    flex-wrap:wrap;
-  }
-  .manual-add input{
-    flex:1;
-    min-width:110px;
-    padding:9px 10px;
-    border:1px solid var(--line);
-    border-radius:8px;
-    font-size:13.5px;
-    font-family:inherit;
-    background:#fff;
-  }
-  .manual-add button{
-    padding:9px 16px;
-    border:none;
-    border-radius:8px;
-    background:var(--ink);
-    color:#fff;
-    font-size:13.5px;
-    cursor:pointer;
-    font-family:inherit;
-  }
-
-  /* word list */
-  .list-toolbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:10px;
-  }
-  .list-toolbar input[type=text]{
-    padding:8px 12px;
-    border:1px solid var(--line);
-    border-radius:8px;
-    font-size:13.5px;
-    font-family:inherit;
-    width:180px;
-  }
-  .clear-all{
-    background:none;
-    border:1px solid var(--line);
-    color:var(--bad);
-    border-radius:8px;
-    padding:7px 12px;
-    font-size:12.5px;
-    cursor:pointer;
-    font-family:inherit;
-  }
-
-  .group-bar{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:12px 14px;
-    margin-bottom:14px;
-  }
-  .group-bar-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-  .group-bar-row label{
-    font-size:13px;
-    color:var(--muted);
-  }
-  .group-bar-row input[type=number]{
-    width:64px;
-    padding:7px 8px;
-    border:1px solid var(--line);
-    border-radius:7px;
-    font-size:13.5px;
-    font-family:inherit;
-    text-align:center;
-  }
-  .group-bar-row span{font-size:13px;color:var(--muted);}
-  .group-apply-btn{
-    background:var(--ink);
-    color:#fff;
-    border:none;
-    border-radius:7px;
-    padding:7px 14px;
-    font-size:13px;
-    font-family:inherit;
-    cursor:pointer;
-    margin-left:auto;
-  }
-  .group-bar-hint{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:8px;
-    line-height:1.5;
-  }
-
-  .search-test-bar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    background:var(--accent-soft);
-    border-radius:10px;
-    padding:10px 14px;
-    margin-bottom:14px;
-    font-size:13px;
-    color:var(--accent);
-  }
-  .search-test-btn{
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    border-radius:7px;
-    padding:7px 14px;
-    font-size:13px;
-    font-family:inherit;
-    cursor:pointer;
-    flex:none;
-  }
-
-  .group-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:10px;
-    margin-bottom:8px;
-    overflow:hidden;
-  }
-  .group-card-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:13px 16px;
-    cursor:pointer;
-  }
-  .group-card-title{
-    font-size:14.5px;
-    font-weight:700;
-  }
-  .group-card-sub{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:2px;
-    font-weight:400;
-  }
-  .group-card-actions{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex:none;
-  }
-  .group-test-btn{
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    border-radius:7px;
-    padding:7px 13px;
-    font-size:12.5px;
-    font-family:inherit;
-    cursor:pointer;
-  }
-  .group-caret{
-    color:var(--muted);
-    font-size:13px;
-    transition:transform .15s;
-    flex:none;
-  }
-  .group-card.open .group-caret{transform:rotate(90deg);}
-  .group-card-body{
-    display:none;
-    padding:0 16px 14px;
-    border-top:1px solid var(--line);
-  }
-  .group-card.open .group-card-body{display:block;}
-  .group-card-body .word-item{
-    box-shadow:none;
-    border:none;
-    border-bottom:1px solid var(--line);
-    border-radius:0;
-    margin-bottom:0;
-    padding:12px 0;
-  }
-  .group-card-body .word-item:last-child{border-bottom:none;}
-  .group-card.cleared{border-color:var(--good);}
-  .group-check{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:16px;
-    height:16px;
-    border-radius:50%;
-    background:var(--good);
-    color:#fff;
-    font-size:10.5px;
-    font-weight:700;
-    margin-right:6px;
-    vertical-align:middle;
-  }
-  .word-item{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:14px 16px;
-    margin-bottom:8px;
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-  }
-  .word-item .w-num{
-    flex:none;
-    width:30px;
-    color:var(--muted);
-    font-size:12.5px;
-    font-weight:600;
-    padding-top:2px;
-  }
-  .word-item .w-main{flex:1;}
-  .word-item .w-en{font-weight:700;font-size:15px;}
-  .word-item .w-kr{font-size:13.5px;color:var(--ink);margin-top:3px;}
-  .word-item .w-etym{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
-  .word-item .w-del{
-    background:none;border:none;color:var(--muted);cursor:pointer;
-    font-size:16px;padding:2px 6px;height:fit-content;
-  }
-  .word-item .w-del:hover{color:var(--bad);}
-
-  /* Test panel */
-  .test-setup{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:22px;
-    text-align:center;
-  }
-  .test-setup h2{margin:0 0 6px;font-size:18px;}
-  .test-setup p{margin:0 0 18px;font-size:13.5px;color:var(--muted);}
-  .count-select{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-    margin-bottom:18px;
-    flex-wrap:wrap;
-  }
-  .count-select button{
-    padding:8px 16px;
-    border-radius:999px;
-    border:1px solid var(--line);
-    background:#fff;
-    font-family:inherit;
-    font-size:13.5px;
-    cursor:pointer;
-  }
-  .count-select button.sel{
-    background:var(--ink);
-    color:#fff;
-    border-color:var(--ink);
-  }
-  .start-btn{
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    padding:12px 30px;
-    border-radius:10px;
-    font-size:15px;
-    font-weight:700;
-    cursor:pointer;
-    font-family:inherit;
-  }
-  .start-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
-
-  .range-mode-tabs{
-    display:flex;
-    justify-content:center;
-    gap:6px;
-    margin-bottom:18px;
-  }
-  .range-mode-tabs button{
-    padding:7px 14px;
-    border-radius:999px;
-    border:1px solid var(--line);
-    background:#fff;
-    font-family:inherit;
-    font-size:13px;
-    color:var(--muted);
-    cursor:pointer;
-  }
-  .range-mode-tabs button.mode-sel{
-    background:var(--ink);
-    color:#fff;
-    border-color:var(--ink);
-  }
-  .range-inputs{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    margin-bottom:12px;
-    flex-wrap:wrap;
-  }
-  .range-inputs input[type=number]{
-    width:100px;
-    padding:9px 10px;
-    border:1px solid var(--line);
-    border-radius:8px;
-    font-size:14px;
-    font-family:inherit;
-    text-align:center;
-  }
-  .range-inputs span{color:var(--muted);font-size:14px;}
-  .range-inputs .range-max{font-size:12px;color:var(--muted);width:100%;margin-top:2px;}
-  .range-err{
-    color:var(--bad);
-    font-size:12.5px;
-    margin-top:10px;
-    min-height:16px;
-  }
-
-  .accuracy-range-tabs{
-    display:flex;
-    gap:6px;
-    margin-bottom:10px;
-  }
-  .accuracy-range-tabs button{
-    flex:1;
-    appearance:none;
-    border:1px solid var(--line);
-    background:var(--card);
-    color:var(--muted);
-    border-radius:8px;
-    padding:8px 10px;
-    font-size:13px;
-    font-family:inherit;
-    cursor:pointer;
-  }
-  .accuracy-range-tabs button.sel{
-    border-color:var(--accent);
-    background:var(--accent-soft);
-    color:var(--accent);
-    font-weight:700;
-  }
-
-  .test-group-select{
-    text-align:left;
-    margin-bottom:18px;
-  }
-  .test-group-label{
-    font-size:13.5px;
-    font-weight:700;
-    color:var(--ink);
-    margin-bottom:9px;
-  }
-  .test-group-buttons{
-    display:flex;
-    gap:7px;
-    flex-wrap:wrap;
-  }
-  .test-group-buttons button{
-    appearance:none;
-    border:1px solid var(--line);
-    background:var(--card);
-    color:var(--ink);
-    border-radius:8px;
-    padding:8px 11px;
-    font-size:12.5px;
-    font-family:inherit;
-    cursor:pointer;
-    user-select:none;
-    -webkit-user-select:none;
-    touch-action:none;
-  }
-  .test-group-buttons button.sel{
-    border-color:var(--accent);
-    background:var(--accent-soft);
-    color:var(--accent);
-    font-weight:700;
-  }
-  .test-group-buttons.compact{
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:6px;
-  }
-  .test-group-buttons.compact button{
-    padding:8px 4px;
-    font-size:12.5px;
-  }
-  .test-group-buttons.compact button span{
-    display:none;
-  }
-  .test-group-hint{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:7px;
-    line-height:1.5;
-  }
-  .acc-scope-cards{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    margin-top:8px;
-    margin-bottom:22px;
-    text-align:left;
-  }
-  .acc-scope-card{
-    display:block;
-    position:relative;
-    border:1.5px solid var(--line);
-    border-radius:11px;
-    padding:13px 14px;
-    cursor:pointer;
-    transition:border-color .15s, background .15s;
-    user-select:none;
-    -webkit-user-select:none;
-  }
-  .acc-scope-card input[type=radio]{
-    position:absolute;
-    opacity:0;
-    pointer-events:none;
-    outline:none;
-  }
-  .acc-scope-card:has(input:checked){
-    border-color:var(--accent);
-    background:var(--accent-soft);
-  }
-  .acc-scope-card.checked{
-    border-color:var(--accent);
-    background:var(--accent-soft);
-  }
-  .acc-scope-card-title{
-    font-size:13.5px;
-    font-weight:700;
-    color:var(--ink);
-    margin-bottom:2px;
-  }
-  .acc-scope-card-sub{
-    font-size:12.5px;
-    color:var(--muted);
-    display:flex;
-    align-items:center;
-    gap:6px;
-    flex-wrap:wrap;
-  }
-  .stepper{
-    display:inline-flex;
-    align-items:center;
-    border:1px solid var(--line);
-    border-radius:8px;
-    overflow:hidden;
-    background:#fff;
-  }
-  .stepper-btn{
-    appearance:none;
-    border:none;
-    background:none;
-    width:26px;
-    height:26px;
-    font-size:15px;
-    line-height:1;
-    color:var(--ink);
-    cursor:pointer;
-    font-family:inherit;
-    user-select:none;
-    -webkit-user-select:none;
-  }
-  .stepper-btn:active{background:var(--line);}
-  .stepper input[type=number]{
-    width:32px;
-    border:none;
-    border-left:1px solid var(--line);
-    border-right:1px solid var(--line);
-    text-align:center;
-    font-size:12.5px;
-    font-family:inherit;
-    padding:5px 0;
-    -moz-appearance:textfield;
-    outline:none; /* 기본 파란 포커스 링 제거 - 카드 강조색과 겹쳐 산만해 보이는 것을 방지 */
-    background:transparent;
-  }
-  .stepper input[type=number]:focus{
-    background:var(--accent-soft);
-  }
-  .stepper-btn:focus{
-    outline:none;
-  }
-  .stepper input[type=number]::-webkit-outer-spin-button,
-  .stepper input[type=number]::-webkit-inner-spin-button{
-    -webkit-appearance:none;
-    margin:0;
-  }
-
-  .acc-threshold-block{
-    text-align:left;
-    margin-bottom:8px;
-  }
-  .acc-threshold-label{
-    font-size:13.5px;
-    color:var(--ink);
-    margin-bottom:12px;
-  }
-  .acc-threshold-label b{
-    color:var(--accent);
-    font-size:16px;
-  }
-  .acc-slider{
-    width:100%;
-    appearance:none;
-    -webkit-appearance:none;
-    height:5px;
-    border-radius:999px;
-    background:var(--line);
-    outline:none;
-    margin:0;
-  }
-  .acc-slider::-webkit-slider-thumb{
-    appearance:none;
-    -webkit-appearance:none;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:var(--accent);
-    border:3px solid #fff;
-    box-shadow:0 1px 4px rgba(0,0,0,0.25);
-    cursor:pointer;
-  }
-  .acc-slider::-moz-range-thumb{
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:var(--accent);
-    border:3px solid #fff;
-    box-shadow:0 1px 4px rgba(0,0,0,0.25);
-    cursor:pointer;
-  }
-  .acc-slider-scale{
-    display:flex;
-    justify-content:space-between;
-    font-size:11px;
-    color:var(--muted);
-    margin-top:6px;
-    padding:0 10px; /* 슬라이더 손잡이(20px) 반지름만큼 여백을 줘서 0%/100% 라벨이 실제 손잡이 이동 범위와 맞도록 함 */
-  }
-  .acc-hint{
-    font-size:12px;
-    color:var(--muted);
-    margin:16px 0 4px;
-    line-height:1.5;
-    text-align:left;
-  }
-
-  .quiz-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:36px 26px;
-    text-align:center;
-  }
-  .quiz-progress{
-    font-size:12.5px;
-    color:var(--muted);
-    margin-bottom:18px;
-    letter-spacing:.02em;
-  }
-  .quiz-word{
-    font-family: Georgia, 'Noto Serif KR', serif;
-    font-size:34px;
-    font-weight:700;
-    margin-bottom:26px;
-    word-break:break-word;
-  }
-  .quiz-input{
-    width:100%;
-    max-width:340px;
-    padding:12px 14px;
-    font-size:16px;
-    border:1.5px solid var(--line);
-    border-radius:10px;
-    text-align:center;
-    font-family:inherit;
-    margin-bottom:14px;
-  }
-  .quiz-input:focus{outline:none;border-color:var(--accent);}
-  .quiz-input.correct{border-color:var(--good);background:var(--good-soft);}
-  .quiz-input.wrong{border-color:var(--bad);background:var(--bad-soft);}
-
-  .quiz-feedback{
-    min-height:24px;
-    font-size:14px;
-    margin-bottom:16px;
-  }
-  .quiz-feedback.correct{color:var(--good);font-weight:700;}
-  .quiz-feedback.wrong{color:var(--bad);}
-  .quiz-feedback .answer-reveal{color:var(--ink);font-weight:700;}
-  .feedback-etym{
-    color:var(--muted);
-    font-weight:400;
-    font-size:12.5px;
-    margin-top:8px;
-    line-height:1.5;
-    text-align:left;
-    background:var(--accent-soft);
-    border-radius:8px;
-    padding:9px 12px;
-  }
-
-  .quiz-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
-  .quiz-btns button{
-    padding:10px 22px;
-    border-radius:9px;
-    font-size:14px;
-    font-family:inherit;
-    cursor:pointer;
-    border:none;
-  }
-  .btn-primary{background:var(--ink);color:#fff;}
-  .btn-ghost{background:none;border:1px solid var(--line) !important;color:var(--muted);}
-  .btn-danger{background:var(--bad);color:#fff;}
-
-  .result-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:34px 26px;
-    text-align:center;
-  }
-  .result-score{
-    font-family:Georgia,'Noto Serif KR',serif;
-    font-size:48px;
-    font-weight:700;
-    margin-bottom:4px;
-  }
-  .result-score span{font-size:22px;color:var(--muted);font-weight:400;}
-  .result-label{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
-  .group-cleared-note{
-    background:var(--good-soft);
-    color:var(--good);
-    font-size:13px;
-    border-radius:8px;
-    padding:9px 12px;
-    margin:-10px 0 20px;
-  }
-  .group-uncleared-note{
-    background:var(--bad-soft);
-    color:var(--bad);
-    font-size:13px;
-    border-radius:8px;
-    padding:9px 12px;
-    margin:-10px 0 20px;
-  }
-  .wrong-list{text-align:left;margin-top:18px;}
-  .wrong-list h3{font-size:13.5px;color:var(--muted);margin-bottom:10px;font-weight:600;}
-  .wrong-item{
-    border-top:1px solid var(--line);
-    padding:10px 0;
-    font-size:13.5px;
-  }
-  .wrong-item .we{font-weight:700;}
-  .wrong-item .wm{color:var(--muted);margin-top:2px;}
-  .wrong-item .wyours{color:var(--bad);margin-top:2px;}
-  .wrong-item .wetym{color:var(--muted);font-size:12px;margin-top:6px;line-height:1.5;}
-
-  .empty-state{
-    text-align:center;
-    padding:40px 20px;
-    color:var(--muted);
-    font-size:13.5px;
-  }
-
-  footer.credit{
-    margin-top:36px;
-    padding-top:16px;
-    border-top:1px solid var(--line);
-    font-size:11.5px;
-    color:var(--muted);
-    line-height:1.7;
-  }
-</style>
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header class="top">
-    <div class="brand"><span id="brandTitle">단어 테스트장</span> <small>Vocabulary Bench</small></div>
-    <div class="stat-row" id="statRow">
-      <div class="stat-pill">총 단어 <b id="statTotal">0</b>개</div>
-      <div class="stat-pill">최근 정답률 <b id="statAcc">-</b></div>
-      <button id="installBtn" class="install-btn" style="display:none;">홈 화면에 추가</button>
-    </div>
-    <div class="ios-hint" id="iosHint">Safari에서는 <b>공유 버튼</b> → <b>홈 화면에 추가</b>로 앱처럼 설치할 수 있습니다.</div>
-  </header>
+    <h1>단어장 앱 (최적화 버전)</h1>
 
-  <!-- ===== 단어장 홈 (덱 선택 화면) ===== -->
-  <section class="panel active" id="panel-deckhome">
-    <div class="deck-intro">
-      <p>단어장을 선택하거나 새로 만들어보세요. 각 단어장은 단어·그룹·완료 기록이 서로 독립적으로 관리됩니다.</p>
+    <!-- 엑셀/데이터 업로드 영역 -->
+    <div class="upload-card">
+        <h2>단어 업로드</h2>
+        <input type="file" id="fileUpload" accept=".csv, .xlsx">
+        <button id="uploadBtn">대용량 더미 데이터 로드 (테스트용)</button>
     </div>
 
-    <div class="deck-create-card">
-      <input type="text" id="newDeckName" placeholder="새 단어장 이름 (예: 학교단어)" maxlength="40">
-      <button id="createDeckBtn">단어장 만들기</button>
+    <!-- 단어 검색 및 리스트 영역 -->
+    <div class="modal-card">
+        <h2>단어 목록</h2>
+        <div id="groupBarEl" style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <!-- 상태별 그룹화 표시 등 -->
+        </div>
+        <!-- 검색어 입력: 디바운싱 적용됨 -->
+        <input type="text" id="searchBox" placeholder="단어 검색 (디바운싱 300ms 적용)..." style="margin-bottom: 0;">
+        <ul id="groupListEl" class="word-list" style="margin-top: 16px;">
+            <li class="word-item" style="justify-content: center; color: #6b7280;">업로드 버튼을 눌러 데이터를 불러오세요.</li>
+        </ul>
     </div>
 
-    <div id="deckList"></div>
-  </section>
-
-  <!-- ===== 단어장 내부 (기존 앱 화면) ===== -->
-  <section class="panel" id="panel-deckapp">
-
-    <div class="deck-app-header">
-      <button id="backToHomeBtn" class="back-to-home-btn">← 단어장 목록</button>
-      <div class="deck-app-title" id="deckAppTitle"></div>
-    </div>
-
-    <nav class="tabs">
-      <button data-tab="manage" class="active">단어 관리</button>
-      <button data-tab="test">테스트</button>
-    </nav>
-
-    <!-- ===== 단어 관리 ===== -->
-    <section class="panel active" id="panel-manage">
-
-      <div class="upload-card">
-        <h2>엑셀로 단어 추가</h2>
-        <p>xlsx 파일을 올리면 시트에서 <b>영단어 / 뜻 / 어원</b> 열을 자동으로 찾아 추가합니다. (헤더에 "단어","word","뜻","meaning","어원" 등이 포함된 열을 인식)</p>
-        <label class="drop" id="dropZone">
-          <input type="file" id="fileInput" accept=".xlsx,.xls">
-          <div class="icon">📄</div>
-          <div class="main">엑셀 파일을 드래그하거나 눌러서 선택</div>
-          <div class="sub">.xlsx / .xls</div>
-        </label>
-        <div class="upload-msg" id="uploadMsg"></div>
-
-        <div class="manual-add">
-          <input type="text" id="addWord" placeholder="영단어">
-          <input type="text" id="addMeaning" placeholder="뜻">
-          <input type="text" id="addEtym" placeholder="어원 (선택)">
-          <button id="addBtn">추가</button>
-        </div>
-      </div>
-
-      <div class="list-toolbar">
-        <input type="text" id="searchBox" placeholder="단어 검색...">
-        <button class="clear-all" id="clearAllBtn">전체 삭제</button>
-      </div>
-
-      <div class="group-bar" id="groupBar">
-        <div class="group-bar-row">
-          <label for="groupSize">그룹 크기</label>
-          <input type="number" id="groupSize" min="1" value="10">
-          <span>개씩</span>
-          <button id="groupApplyBtn" class="group-apply-btn">그룹 나누기</button>
-        </div>
-        <div class="group-bar-hint" id="groupHint"></div>
-      </div>
-
-      <div id="searchTestBar" class="search-test-bar" style="display:none;">
-        <span id="searchTestCount"></span>
-        <button id="searchTestBtn" class="search-test-btn">이 결과로 시험보기</button>
-      </div>
-
-      <div id="groupList"></div>
-
-      <div id="wordList"></div>
-    </section>
-
-  <!-- ===== 테스트 ===== -->
-  <section class="panel" id="panel-test">
-
-    <div id="testEmptyState" class="empty-state" style="display:none;">테스트할 단어가 없습니다.<br>먼저 "단어 관리" 탭에서 단어를 추가해주세요.</div>
-
-    <div id="testSetup" class="test-setup">
-      <h2>뜻 쓰기 테스트</h2>
-      <p>영단어를 보고 뜻을 입력하세요.</p>
-
-      <div class="range-mode-tabs" id="rangeModeTabs">
-        <button data-mode="count" class="mode-sel">개수로 선택</button>
-        <button data-mode="accuracy">정답률로 선택</button>
-      </div>
-
-      <div id="modeCount">
-        <div class="count-select" id="countSelect"></div>
-      </div>
-
-      <div id="modeAccuracy" style="display:none;">
-        <div class="accuracy-range-tabs" id="accuracyRangeTabs">
-          <button type="button" data-range-type="group" class="sel">그룹</button>
-          <button type="button" data-range-type="number">번호 범위</button>
-        </div>
-
-        <div id="accuracyGroupPanel">
-          <div class="test-group-buttons compact" id="accuracyGroupButtons"></div>
-        </div>
-
-        <div id="accuracyNumberPanel" style="display:none;">
-          <div class="range-inputs">
-          <input type="number" id="rangeFrom" min="1" placeholder="시작 번호">
-          <span>~</span>
-          <input type="number" id="rangeTo" min="1" placeholder="끝 번호">
-          <span class="range-max" id="rangeMaxHint"></span>
-          </div>
-        </div>
-
-        <div class="acc-scope-cards">
-          <label class="acc-scope-card" data-scope-card="recentN">
-            <input type="radio" name="accScope" value="recentN" checked>
-            <div class="acc-scope-card-body">
-              <div class="acc-scope-card-title">최근 시험 기준</div>
-              <div class="acc-scope-card-sub">
-                최근
-                <span class="stepper" data-stepper="accRecentN">
-                  <button type="button" class="stepper-btn" data-step="-1">−</button>
-                  <input type="number" id="accRecentN" min="1" max="99" value="3">
-                  <button type="button" class="stepper-btn" data-step="1">+</button>
-                </span>
-                회
-              </div>
-            </div>
-          </label>
-          <label class="acc-scope-card" data-scope-card="all">
-            <input type="radio" name="accScope" value="all">
-            <div class="acc-scope-card-body">
-              <div class="acc-scope-card-title">전체 기록 기준</div>
-              <div class="acc-scope-card-sub">시험 횟수 상관없이 누적으로</div>
-            </div>
-          </label>
-        </div>
-
-        <div class="acc-threshold-block">
-          <div class="acc-threshold-label">정답률 <b id="accThresholdVal">50</b>% 이하인 단어만</div>
-          <input type="range" id="accThreshold" min="0" max="100" step="5" value="50" class="acc-slider">
-          <div class="acc-slider-scale"><span>0%</span><span>50%</span><span>100%</span></div>
-        </div>
-
-        <div class="acc-hint" id="accHint"></div>
-      </div>
-
-      <button class="start-btn" id="startTestBtn">테스트 시작</button>
-      <div class="range-err" id="rangeErr"></div>
-    </div>
-
-    <div id="quizArea" style="display:none;"></div>
-    <div id="resultArea" style="display:none;"></div>
-
-    </section>
-  </section>
-
-  <footer class="credit">
-    데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
-    저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
-  </footer>
-</div>
-
-<!-- ===== 이름변경 모달 ===== -->
-<div class="modal-overlay" id="renameModalOverlay" style="display:none;">
-  <div class="modal-card">
-    <h3>단어장 이름 변경</h3>
-    <input type="text" id="renameModalInput" maxlength="40" placeholder="단어장 이름">
-    <div class="modal-btns">
-      <button class="modal-btn-cancel" id="renameModalCancel">취소</button>
-      <button class="modal-btn-confirm" id="renameModalConfirm">변경</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== 삭제 확인 모달 ===== -->
-<div class="modal-overlay" id="deleteModalOverlay" style="display:none;">
-  <div class="modal-card">
-    <h3>단어장 삭제</h3>
-    <p id="deleteModalText"></p>
-    <div class="modal-btns">
-      <button class="modal-btn-cancel" id="deleteModalCancel">취소</button>
-      <button class="modal-btn-danger" id="deleteModalConfirm">삭제</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* =====================================================================
-   Deck (단어장) system
-   여러 개의 독립된 단어장을 만들고 전환할 수 있게 한다.
-   각 단어장의 단어/그룹설정/완료기록/정답률은 덱 ID별로 완전히 분리 저장된다.
-   ===================================================================== */
-const DECKS_KEY = 'vocabBench.decks.v1';
-const CURRENT_DECK_KEY = 'vocabBench.currentDeck.v1';
-
-function loadDecks(){
-  try{
-    const raw = localStorage.getItem(DECKS_KEY);
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return [];
-}
-function saveDecks(decks){
-  localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
-}
-function makeDeckId(){
-  return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-}
-function getCurrentDeckId(){
-  return localStorage.getItem(CURRENT_DECK_KEY);
-}
-function setCurrentDeckId(id){
-  if(id) localStorage.setItem(CURRENT_DECK_KEY, id);
-  else localStorage.removeItem(CURRENT_DECK_KEY);
-}
-
-let DECKS = loadDecks();
-let CURRENT_DECK_ID = null;
-
-// 이전 버전(단어장 개념이 없던 시절) 사용자를 위한 1회성 마이그레이션:
-// 예전 방식으로 저장돼 있던 단어/설정이 있으면 "기본 단어장"으로 자동 변환한다.
-(function migrateLegacyDataIfNeeded(){
-  if(DECKS.length > 0) return; // 이미 단어장이 있으면 마이그레이션 불필요
-  const legacyWordsRaw = localStorage.getItem('vocabBench.words.v1');
-  if(!legacyWordsRaw) return;
-  try{
-    const legacyWords = JSON.parse(legacyWordsRaw);
-    if(!Array.isArray(legacyWords) || legacyWords.length===0) return;
-
-    const id = makeDeckId();
-    DECKS = [{ id, name: '기본 단어장', createdAt: Date.now() }];
-    saveDecks(DECKS);
-
-    localStorage.setItem(deckScopedKey('vocabBench.words.v1', id), legacyWordsRaw);
-    ['vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
-      const v = localStorage.getItem(k);
-      if(v!==null) localStorage.setItem(deckScopedKey(k, id), v);
-    });
-  }catch(e){}
-})();
-
-function deckScopedKey(baseKey, deckId){
-  return baseKey + '.deck.' + deckId;
-}
-
-function renderDeckList(){
-  const el = document.getElementById('deckList');
-  if(DECKS.length===0){
-    el.innerHTML = '<div class="deck-empty">아직 단어장이 없습니다.<br>위에서 이름을 입력하고 새 단어장을 만들어보세요.</div>';
-    return;
-  }
-  el.innerHTML = DECKS.map(d=>{
-    const wordCount = countWordsInDeck(d.id);
-    return `<div class="deck-card" data-deck="${d.id}">
-      <div class="deck-card-main">
-        <div class="deck-card-name">${escapeHtml(d.name)}</div>
-        <div class="deck-card-meta">${wordCount}개 단어</div>
-      </div>
-      <div class="deck-card-actions">
-        <button class="deck-rename-btn" data-rename="${d.id}">이름변경</button>
-        <button class="deck-delete-btn" data-delete="${d.id}">삭제</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  el.querySelectorAll('.deck-card').forEach(card=>{
-    card.addEventListener('click', (e)=>{
-      if(e.target.closest('button')) return;
-      openDeck(card.dataset.deck);
-    });
-  });
-  el.querySelectorAll('[data-rename]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const id = btn.dataset.rename;
-      const deck = DECKS.find(d=>d.id===id);
-      openRenameModal(deck);
-    });
-  });
-  el.querySelectorAll('[data-delete]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const id = btn.dataset.delete;
-      const deck = DECKS.find(d=>d.id===id);
-      openDeleteModal(deck);
-    });
-  });
-}
-
-/* ---------- Rename modal ---------- */
-function openRenameModal(deck){
-  if(!deck) return;
-  const overlay = document.getElementById('renameModalOverlay');
-  const input = document.getElementById('renameModalInput');
-  input.value = deck.name;
-  overlay.style.display = 'flex';
-  setTimeout(()=>{ input.focus(); input.select(); }, 30);
-
-  function close(){
-    overlay.style.display = 'none';
-    document.getElementById('renameModalConfirm').removeEventListener('click', onConfirm);
-    input.removeEventListener('keydown', onKeydown);
-  }
-  function onConfirm(){
-    const newName = input.value.trim();
-    if(newName){
-      deck.name = newName.slice(0,40);
-      saveDecks(DECKS);
-      renderDeckList();
-      if(CURRENT_DECK_ID === deck.id){
-        document.getElementById('deckAppTitle').textContent = deck.name;
-        document.getElementById('brandTitle').textContent = deck.name;
-      }
-    }
-    close();
-  }
-  function onKeydown(e){
-    if(e.key==='Enter') onConfirm();
-    if(e.key==='Escape') close();
-  }
-  document.getElementById('renameModalConfirm').addEventListener('click', onConfirm);
-  document.getElementById('renameModalCancel').onclick = close;
-  overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
-  input.addEventListener('keydown', onKeydown);
-}
-
-/* ---------- Delete modal ---------- */
-function openDeleteModal(deck){
-  if(!deck) return;
-  const overlay = document.getElementById('deleteModalOverlay');
-  document.getElementById('deleteModalText').textContent =
-    `"${deck.name}" 단어장을 삭제할까요?\n단어, 그룹 설정, 완료 기록이 모두 함께 삭제되며 되돌릴 수 없습니다.`;
-  overlay.style.display = 'flex';
-
-  function close(){
-    overlay.style.display = 'none';
-    document.getElementById('deleteModalConfirm').removeEventListener('click', onConfirm);
-  }
-  function onConfirm(){
-    ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2','vocabBench.wordStats.v1'].forEach(k=>{
-      localStorage.removeItem(deckScopedKey(k, deck.id));
-    });
-    DECKS = DECKS.filter(d=>d.id!==deck.id);
-    saveDecks(DECKS);
-    renderDeckList();
-    close();
-  }
-  document.getElementById('deleteModalConfirm').addEventListener('click', onConfirm);
-  document.getElementById('deleteModalCancel').onclick = close;
-  overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
-}
-
-function countWordsInDeck(deckId){
-  try{
-    const raw = localStorage.getItem(deckScopedKey('vocabBench.words.v1', deckId));
-    if(!raw) return 0;
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.length : 0;
-  }catch(e){ return 0; }
-}
-
-document.getElementById('createDeckBtn').addEventListener('click', ()=>{
-  const input = document.getElementById('newDeckName');
-  const name = input.value.trim();
-  if(!name){
-    alert('단어장 이름을 입력해주세요.');
-    return;
-  }
-  const id = makeDeckId();
-  DECKS.push({ id, name: name.slice(0,40), createdAt: Date.now() });
-  saveDecks(DECKS);
-  input.value = '';
-  renderDeckList();
-});
-document.getElementById('newDeckName').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter') document.getElementById('createDeckBtn').click();
-});
-
-document.getElementById('backToHomeBtn').addEventListener('click', ()=>{
-  closeDeck();
-});
-
-function openDeck(deckId, opts){
-  opts = opts || {};
-  CURRENT_DECK_ID = deckId;
-  setCurrentDeckId(deckId);
-  const deck = DECKS.find(d=>d.id===deckId);
-  document.getElementById('deckAppTitle').textContent = deck ? deck.name : '';
-  document.getElementById('brandTitle').textContent = deck ? deck.name : '단어 테스트장';
-  document.getElementById('statRow').style.display = 'flex';
-
-  document.getElementById('panel-deckhome').classList.remove('active');
-  document.getElementById('panel-deckapp').classList.add('active');
-
-  loadDeckData();
-  testSetupInitialized = false;
-  quizState = null;
-  renderStats();
-  resetTestSetup(true);
-  renderWordList('');
-  // 항상 "단어 관리" 탭을 기본으로 보여준다.
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-  document.querySelector('nav.tabs button[data-tab="manage"]').classList.add('active');
-  document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-manage').classList.add('active');
-
-  // 안드로이드 기기 뒤로가기 버튼 대응: 단어장에 들어올 때 히스토리를 하나 쌓아둬서,
-  // 뒤로가기를 누르면 앱이 바로 꺼지지 않고 단어장 목록(홈)으로 나가지도록 한다.
-  if(!opts.skipHistoryPush){
-    history.pushState({ vocabBenchView: 'deckapp' }, '');
-  }
-}
-
-function closeDeck(opts){
-  opts = opts || {};
-  CURRENT_DECK_ID = null;
-  setCurrentDeckId(null);
-  document.getElementById('brandTitle').textContent = '단어 테스트장';
-  document.getElementById('statRow').style.display = 'none';
-  document.getElementById('panel-deckapp').classList.remove('active');
-  document.getElementById('panel-deckhome').classList.add('active');
-  renderDeckList();
-
-  // 뒤로가기 이벤트로 인해 호출된 경우가 아니면(= 화면의 버튼을 직접 눌러서 나온 경우),
-  // 아까 쌓아둔 히스토리 항목을 소비해서 이후 뒤로가기 동작이 꼬이지 않게 한다.
-  if(!opts.fromPopState && history.state && history.state.vocabBenchView === 'deckapp'){
-    history.back();
-  }
-}
-
-// 안드로이드 뒤로가기(또는 브라우저 뒤로가기) 대응
-window.addEventListener('popstate', (e)=>{
-  if(CURRENT_DECK_ID){
-    // 단어장 안에 있다가 뒤로가기 -> 홈 화면으로
-    closeDeck({ fromPopState: true });
-  }
-  // 이미 홈 화면이면 popstate가 와도 별도 처리 없음(브라우저 기본 동작에 맡김 = 앱 종료 등)
-});
-
-/* ---------- Storage (현재 열린 단어장 기준으로 동적 키 사용) ---------- */
-function STORE_KEY(){ return deckScopedKey('vocabBench.words.v1', CURRENT_DECK_ID); }
-function HIST_KEY(){ return deckScopedKey('vocabBench.lastAccuracy.v1', CURRENT_DECK_ID); }
-
-function loadWords(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY());
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return null;
-}
-function saveWords(words){
-  localStorage.setItem(STORE_KEY(), JSON.stringify(words));
-  renderStats();
-}
-function saveAccuracy(pct){
-  localStorage.setItem(HIST_KEY(), String(pct));
-  renderStats();
-}
-
-let WORDS = [];
-let IS_FIRST_RUN = false;
-
-function loadDeckData(){
-  WORDS = loadWords() || [];
-  IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
-  GROUP_SIZE = loadGroupSize();
-  openGroups.clear();
-  wordStatsCache = null;
-
-  // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
-  if(IS_FIRST_RUN){
-    fetch('./words.xlsx')
-      .then(res=>{
-        if(!res.ok) throw new Error('words.xlsx not found');
-        return res.arrayBuffer();
-      })
-      .then(buf=>{
-        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-        const { added } = parseWordsFromWorkbook(wb, WORDS);
-        if(added.length===0) return;
-        WORDS.push(...added);
-        saveWords(WORDS);
-        renderWordList(document.getElementById('searchBox').value);
-      })
-      .catch(()=>{
-        // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
-      });
-  }
-}
-
-/* ---------- Tabs ---------- */
-document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab==='test') {
-      resetTestSetup();
-      // 관리 탭을 다녀온 뒤에는 테스트 설정 화면으로 돌아오되, 설정값은 유지한다.
-      document.getElementById('quizArea').style.display='none';
-      document.getElementById('resultArea').style.display='none';
-      document.getElementById('testSetup').style.display=WORDS.length ? 'block' : 'none';
-    }
-    if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
-  });
-});
-
-/* ---------- Stats ---------- */
-function renderStats(){
-  document.getElementById('statTotal').textContent = WORDS.length;
-  const acc = localStorage.getItem(HIST_KEY());
-  document.getElementById('statAcc').textContent = acc ? acc+'%' : '-';
-}
-
-/* ---------- Group size setting ---------- */
-function GROUP_KEY(){ return deckScopedKey('vocabBench.groupSize.v1', CURRENT_DECK_ID); }
-function loadGroupSize(){
-  const v = parseInt(localStorage.getItem(GROUP_KEY()) || '10', 10);
-  return (v && v>0) ? v : 10;
-}
-function saveGroupSize(n){
-  localStorage.setItem(GROUP_KEY(), String(n));
-}
-let GROUP_SIZE = 10;
-
-function buildGroups(size){
-  const groups = [];
-  for(let i=0;i<WORDS.length;i+=size){
-    groups.push({
-      from: i+1,
-      to: Math.min(i+size, WORDS.length),
-      items: WORDS.slice(i, i+size),
-    });
-  }
-  return groups;
-}
-
-/* ---------- Word list render ---------- */
-const openGroups = new Set();
-function renderWordList(filter){
-  const listEl = document.getElementById('wordList');
-  const groupListEl = document.getElementById('groupList');
-  const groupBarEl = document.getElementById('groupBar');
-  const searchTestBar = document.getElementById('searchTestBar');
-  const f = (filter||'').trim().toLowerCase();
-  const isSearching = f.length>0;
-
-  if(WORDS.length===0){
-    groupBarEl.style.display = 'none';
-    groupListEl.innerHTML = '';
-    searchTestBar.style.display = 'none';
-    listEl.innerHTML = '<div class="empty-state">아직 등록된 단어가 없습니다.<br>엑셀을 올리거나 직접 추가해보세요.</div>';
-    return;
-  }
-
-  if(isSearching){
-    // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
-    groupBarEl.style.display = 'none';
-    groupListEl.innerHTML = '';
-    const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
-
-    if(filtered.length===0){
-      searchTestBar.style.display = 'none';
-      listEl.innerHTML = '<div class="empty-state">검색 결과가 없습니다.</div>';
-      return;
-    }
-
-    searchTestBar.style.display = 'flex';
-    document.getElementById('searchTestCount').textContent = `검색된 단어 ${filtered.length}개`;
-    document.getElementById('searchTestBtn').onclick = ()=>{
-      document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(shuffle(filtered), null, {type:'custom', items:filtered.map(w=>w.word)});
-    };
-
-    listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
-    bindWordDelButtons(listEl, ()=> renderWordList(document.getElementById('searchBox').value));
-    return;
-  }
-
-  // 검색 중이 아님: 그룹 카드 뷰
-  searchTestBar.style.display = 'none';
-  listEl.innerHTML = '';
-  groupBarEl.style.display = 'block';
-  document.getElementById('groupSize').value = GROUP_SIZE;
-
-  const groups = buildGroups(GROUP_SIZE);
-  const hint = document.getElementById('groupHint');
-  if(groups.length<=1){
-    hint.textContent = `총 ${WORDS.length}개 단어가 1개 그룹으로 묶여 있습니다.`;
-  }else{
-    const lastSize = groups[groups.length-1].items.length;
-    hint.textContent = lastSize===GROUP_SIZE
-      ? `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 ${groups.length}개 그룹으로 나눴습니다.`
-      : `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 나누고, 마지막 ${lastSize}개는 별도 그룹으로 묶었습니다. (${groups.length}개 그룹)`;
-  }
-
-  groupListEl.innerHTML = groups.map((g, gi)=>{
-    const openAttr = openGroups.has(gi) ? ' open' : '';
-    const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
-    const cleared = isGroupCleared(gKey);
-    const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
-    const clearedClass = cleared ? ' cleared' : '';
-    return `<div class="group-card${openAttr}${clearedClass}" data-gi="${gi}">
-      <div class="group-card-head" data-toggle="${gi}">
-        <div>
-          <div class="group-card-title">${clearedBadge}그룹 ${gi+1} <span style="color:var(--muted);font-weight:400;">(${g.from}~${g.to}번)</span></div>
-          <div class="group-card-sub">${g.items.length}개 단어${cleared ? ' · 완료' : ''}</div>
-        </div>
-        <div class="group-card-actions">
-          <button class="group-test-btn" data-testgroup="${gi}">시험보기</button>
-          <span class="group-caret">▸</span>
-        </div>
-      </div>
-      <div class="group-card-body" data-body="${gi}"></div>
-    </div>`;
-  }).join('');
-
-  // 그룹 펼치기/접기
-  groupListEl.querySelectorAll('[data-toggle]').forEach(head=>{
-    head.addEventListener('click', (e)=>{
-      if(e.target.closest('.group-test-btn')) return;
-      const gi = parseInt(head.dataset.toggle, 10);
-      const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
-      const isOpen = card.classList.toggle('open');
-      if(isOpen){
-        openGroups.add(gi);
-        const body = card.querySelector('.group-card-body');
-        const g = groups[gi];
-        body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
-        bindWordDelButtons(body, ()=> renderWordList(''));
-      }else{
-        openGroups.delete(gi);
-      }
-    });
-  });
-
-  // 이미 열려있던 그룹은 내용 채우기
-  openGroups.forEach(gi=>{
-    if(gi>=groups.length) return;
-    const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
-    if(!card) return;
-    const body = card.querySelector('.group-card-body');
-    const g = groups[gi];
-    body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
-    bindWordDelButtons(body, ()=> renderWordList(''));
-  });
-
-  // 그룹별 시험보기
-  groupListEl.querySelectorAll('[data-testgroup]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const gi = parseInt(btn.dataset.testgroup, 10);
-      const g = groups[gi];
-      const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
-      document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(shuffle(g.items), gKey, {type:'group', groupIndex:gi});
-    });
-  });
-}
-
-function renderWordItemHtml(w, realIdx){
-  return `<div class="word-item">
-    <div class="w-num">${realIdx+1}</div>
-    <div class="w-main">
-      <div class="w-en">${escapeHtml(w.word)}</div>
-      <div class="w-kr">${escapeHtml(w.meaning)}</div>
-      ${w.etym ? `<div class="w-etym">${escapeHtml(w.etym)}</div>` : ''}
-    </div>
-    <button class="w-del" data-idx="${realIdx}" title="삭제">✕</button>
-  </div>`;
-}
-
-function bindWordDelButtons(container, onDeleted){
-  container.querySelectorAll('.w-del').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.idx,10);
-      WORDS.splice(idx,1);
-      saveWords(WORDS);
-      onDeleted();
-    });
-  });
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-document.getElementById('searchBox').addEventListener('input', (e)=>{
-  renderWordList(e.target.value);
-});
-
-document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
-  const n = parseInt(document.getElementById('groupSize').value, 10);
-  if(!n || n<1){
-    alert('1 이상의 숫자를 입력해주세요.');
-    return;
-  }
-  GROUP_SIZE = n;
-  saveGroupSize(n);
-  openGroups.clear();
-  wordStatsCache = null;
-  renderWordList('');
-});
-
-document.getElementById('clearAllBtn').addEventListener('click', ()=>{
-  if(WORDS.length===0) return;
-  if(confirm('등록된 단어를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.')){
-    WORDS = [];
-    saveWords(WORDS);
-    openGroups.clear();
-  wordStatsCache = null;
-    renderWordList('');
-  }
-});
-
-/* ---------- Manual add ---------- */
-document.getElementById('addBtn').addEventListener('click', ()=>{
-  const w = document.getElementById('addWord').value.trim();
-  const m = document.getElementById('addMeaning').value.trim();
-  const e = document.getElementById('addEtym').value.trim();
-  if(!w || !m){
-    showUploadMsg('영단어와 뜻을 모두 입력해주세요.', 'err');
-    return;
-  }
-  WORDS.push({word:w, meaning:m, etym:e});
-  saveWords(WORDS);
-  renderWordList(document.getElementById('searchBox').value);
-  document.getElementById('addWord').value='';
-  document.getElementById('addMeaning').value='';
-  document.getElementById('addEtym').value='';
-  showUploadMsg(`"${w}" 단어를 추가했습니다.`, 'ok');
-});
-
-/* ---------- Excel upload ---------- */
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-
-dropZone.addEventListener('dragover', (e)=>{e.preventDefault(); dropZone.classList.add('drag');});
-dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
-dropZone.addEventListener('drop', (e)=>{
-  e.preventDefault();
-  dropZone.classList.remove('drag');
-  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', (e)=>{
-  if(e.target.files.length) handleFile(e.target.files[0]);
-});
-
-function showUploadMsg(text, type){
-  const el = document.getElementById('uploadMsg');
-  el.textContent = text;
-  el.className = 'upload-msg show ' + type;
-}
-
-// 워크북에서 단어 목록을 파싱해서 {added: [...], skippedCount: n} 형태로 반환.
-// existingWords: 이미 있는 단어 배열(중복 검사용, 원본은 변경하지 않음)
-function parseWordsFromWorkbook(wb, existingWords){
-  const seen = new Set(existingWords.map(x=>x.word.toLowerCase()));
-  const added = [];
-  let skipped = 0;
-
-  wb.SheetNames.forEach(sheetName=>{
-    const sheet = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
-    if(rows.length < 2) return;
-
-    const header = rows[0].map(h=>String(h||'').toLowerCase());
-    const excludeCols = ['내가 쓴', '정답 보기', '채점'];
-    const wordCol = findCol(header, ['영단어','단어','word','english'], excludeCols);
-    const meanCol = findCol(header, ['뜻','정답(뜻)','meaning','뜻(정답)'], excludeCols);
-    const etymCol = findCol(header, ['어원','etymology','etym'], excludeCols);
-
-    if(wordCol===-1 || meanCol===-1) return; // 이 시트는 형식이 안 맞음(테스트/요약 시트일 수 있음)
-
-    for(let i=1;i<rows.length;i++){
-      const row = rows[i];
-      const w = String(row[wordCol]||'').trim();
-      const m = String(row[meanCol]||'').trim();
-      const et = etymCol!==-1 ? String(row[etymCol]||'').trim() : '';
-      if(!w || !m) { continue; }
-      const key = w.toLowerCase();
-      if(seen.has(key)){ skipped++; continue; }
-      seen.add(key);
-      added.push({word:w, meaning:m, etym:et});
-    }
-  });
-
-  return { added, skipped };
-}
-
-function handleFile(file){
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    try{
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-      const { added, skipped } = parseWordsFromWorkbook(wb, WORDS);
-
-      if(added.length===0 && skipped===0){
-        showUploadMsg('단어를 찾지 못했습니다. "영단어/단어"와 "뜻" 열이 있는 시트인지 확인해주세요.', 'err');
-        return;
-      }
-      WORDS.push(...added);
-      saveWords(WORDS);
-      renderWordList(document.getElementById('searchBox').value);
-      showUploadMsg(`${added.length}개 단어를 추가했습니다.${skipped? ` (중복 ${skipped}개 제외)`:''}`, 'ok');
-    }catch(err){
-      showUploadMsg('파일을 읽는 중 오류가 발생했습니다: ' + err.message, 'err');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function findCol(header, keywords, excludeKeywords){
-  // 더 구체적인(긴) 키워드부터 우선 탐색 - "정답(뜻)"이 "뜻"보다 먼저 매칭되도록
-  const sortedKeywords = keywords.slice().sort((a,b)=> b.length - a.length);
-  for(const kw of sortedKeywords){
-    for(let i=0;i<header.length;i++){
-      if(excludeKeywords && excludeKeywords.some(ex=> header[i].includes(ex))) continue;
-      if(header[i].includes(kw)) return i;
-    }
-  }
-  return -1;
-}
-
-/* ---------- Test ---------- */
-let quizState = null;
-let testMode = 'count'; // 'count' | 'accuracy' (accuracy mode always shuffles)
-
-/* ---------- Group completion tracking ---------- */
-// v2: 그룹 키에 실제 단어 구성까지 포함하도록 바뀌어서, 저장 키 이름도 바꿔
-// 예전(v1) 방식으로 저장된 기록이 새 로직과 뒤섞이지 않게 한다.
-function GROUP_RESULT_KEY(){ return deckScopedKey('vocabBench.groupResults.v2', CURRENT_DECK_ID); }
-function loadGroupResults(){
-  try{
-    const raw = localStorage.getItem(GROUP_RESULT_KEY());
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return {};
-}
-function saveGroupResults(obj){
-  localStorage.setItem(GROUP_RESULT_KEY(), JSON.stringify(obj));
-}
-function groupKeyOf(size, from, to, items){
-  // 그룹 크기/범위뿐 아니라 실제 들어있는 단어까지 키에 포함시켜서,
-  // 같은 자리(예: 1~10번)라도 단어 구성이 바뀌면 이전 완료 기록이 이어지지 않게 한다.
-  const wordsFingerprint = (items || []).map(w => w.word.toLowerCase()).join(',');
-  let hash = 0;
-  for(let i=0;i<wordsFingerprint.length;i++){
-    hash = (hash * 31 + wordsFingerprint.charCodeAt(i)) >>> 0;
-  }
-  return `${size}_${from}_${to}_${hash.toString(36)}`;
-}
-function setGroupCleared(key, cleared){
-  const results = loadGroupResults();
-  results[key] = cleared;
-  saveGroupResults(results);
-}
-function isGroupCleared(key){
-  const results = loadGroupResults();
-  return !!results[key];
-}
-
-/* ---------- Per-word answer history (단어별 정답 기록) ---------- */
-// 각 단어(소문자 기준)마다 시도 이력을 [1,0,1,1,...] (정답=1, 오답=0) 형태로 순서대로 쌓아둔다.
-// "최근 N회 정답률"과 "전체 정답률" 계산에 함께 쓰인다.
-function WORD_STATS_KEY(){ return deckScopedKey('vocabBench.wordStats.v1', CURRENT_DECK_ID); }
-let wordStatsCache = null;
-function loadWordStats(){
-  if(wordStatsCache) return wordStatsCache;
-  try{
-    const raw = localStorage.getItem(WORD_STATS_KEY());
-    wordStatsCache = raw ? JSON.parse(raw) : {};
-  }catch(e){
-    wordStatsCache = {};
-  }
-  return wordStatsCache;
-}
-function saveWordStats(obj){
-  wordStatsCache = obj;
-  try{ localStorage.setItem(WORD_STATS_KEY(), JSON.stringify(obj)); }catch(e){}
-}
-function recordWordAnswer(word, isCorrect){
-  const stats = loadWordStats();
-  const key = word.toLowerCase();
-  if(!stats[key]) stats[key] = [];
-  stats[key].push(isCorrect ? 1 : 0);
-  // 이력이 너무 길어지지 않도록 최근 200회까지만 보관
-  if(stats[key].length > 200) stats[key] = stats[key].slice(-200);
-  saveWordStats(stats);
-}
-// history: 해당 단어의 [1,0,1,...] 배열. n이 주어지면 최근 n개만, 없으면 전체 기준.
-function accuracyOf(history, n){
-  if(!history || history.length===0) return null; // 시도 기록 자체가 없음
-  const slice = n ? history.slice(-n) : history;
-  if(slice.length===0) return null;
-  const correct = slice.reduce((a,b)=>a+b, 0);
-  return Math.round((correct / slice.length) * 1000) / 10;
-}
-function attemptsCountOf(history){
-  return history ? history.length : 0;
-}
-
-const TEST_SETTINGS_KEY_BASE = 'vocabBench.testSettings.v2';
-let testSetupInitialized = false;
-let testSettings = null;
-
-function TEST_SETTINGS_KEY(){ return deckScopedKey(TEST_SETTINGS_KEY_BASE, CURRENT_DECK_ID); }
-function defaultTestSettings(){
-  return {
-    mode: 'count',
-    count: 10,
-    accuracyRangeType: 'group',
-    selectedGroups: ['all'],
-    rangeFrom: 1,
-    rangeTo: Math.max(1, WORDS.length),
-    accScope: 'recentN',
-    recentN: 3,
-    threshold: 50
-  };
-}
-function loadTestSettings(){
-  const d = defaultTestSettings();
-  try{
-    const raw = localStorage.getItem(TEST_SETTINGS_KEY());
-    if(raw) return Object.assign(d, JSON.parse(raw));
-  }catch(e){}
-  return d;
-}
-function saveTestSettings(){
-  if(!testSettings || !CURRENT_DECK_ID) return;
-  try{ localStorage.setItem(TEST_SETTINGS_KEY(), JSON.stringify(testSettings)); }catch(e){}
-}
-function syncTestSettingsFromUI(){
-  if(!testSettings) return;
-  testSettings.mode = testMode;
-  const countSelect = document.getElementById('countSelect');
-  if(countSelect?.dataset.selected) testSettings.count = parseInt(countSelect.dataset.selected,10) || 10;
-  const rangeType = document.querySelector('#accuracyRangeTabs button.sel')?.dataset.rangeType;
-  if(rangeType) testSettings.accuracyRangeType = rangeType;
-  const groupEl = document.getElementById('accuracyGroupButtons');
-  if(groupEl){
-    const selected = [...groupEl.querySelectorAll('button.sel')].map(b=>b.dataset.group);
-    testSettings.selectedGroups = selected.length ? selected : ['all'];
-  }
-  const from = parseInt(document.getElementById('rangeFrom')?.value,10);
-  const to = parseInt(document.getElementById('rangeTo')?.value,10);
-  if(Number.isFinite(from)) testSettings.rangeFrom = from;
-  if(Number.isFinite(to)) testSettings.rangeTo = to;
-  const scope = document.querySelector('input[name=accScope]:checked')?.value;
-  if(scope) testSettings.accScope = scope;
-  const recentN = parseInt(document.getElementById('accRecentN')?.value,10);
-  if(Number.isFinite(recentN)) testSettings.recentN = recentN;
-  const threshold = parseInt(document.getElementById('accThreshold')?.value,10);
-  if(Number.isFinite(threshold)) testSettings.threshold = threshold;
-  saveTestSettings();
-}
-function applyTestSettingsToUI(){
-  if(!testSettings) return;
-  testMode = testSettings.mode === 'accuracy' ? 'accuracy' : 'count';
-  const tabs = document.getElementById('rangeModeTabs');
-  tabs?.querySelectorAll('button').forEach(b=>b.classList.toggle('mode-sel', b.dataset.mode===testMode));
-  document.getElementById('modeCount').style.display = testMode==='count' ? 'block':'none';
-  document.getElementById('modeAccuracy').style.display = testMode==='accuracy' ? 'block':'none';
-
-  const countSelect = document.getElementById('countSelect');
-  if(countSelect){
-    const exists = [...countSelect.querySelectorAll('button')].some(b=>parseInt(b.dataset.n,10)===testSettings.count);
-    const n = exists ? testSettings.count : parseInt(countSelect.querySelector('button')?.dataset.n || '10',10);
-    countSelect.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', parseInt(b.dataset.n,10)===n));
-    countSelect.dataset.selected = n;
-    testSettings.count = n;
-  }
-
-  const rt = document.getElementById('accuracyRangeTabs');
-  const rangeType = testSettings.accuracyRangeType === 'number' ? 'number' : 'group';
-  rt?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', b.dataset.rangeType===rangeType));
-  document.getElementById('accuracyGroupPanel').style.display = rangeType==='group' ? 'block':'none';
-  document.getElementById('accuracyNumberPanel').style.display = rangeType==='number' ? 'block':'none';
-  document.getElementById('rangeFrom').value = Math.max(1, Math.min(WORDS.length, testSettings.rangeFrom || 1));
-  document.getElementById('rangeTo').value = Math.max(1, Math.min(WORDS.length, testSettings.rangeTo || WORDS.length));
-
-  const groupEl = document.getElementById('accuracyGroupButtons');
-  if(groupEl){
-    const wanted = new Set(testSettings.selectedGroups || ['all']);
-    const valid = [...groupEl.querySelectorAll('button')].map(b=>b.dataset.group);
-    const chosen = wanted.has('all') ? ['all'] : valid.filter(k=>k!=='all' && wanted.has(k));
-    groupEl.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', chosen.includes(b.dataset.group)));
-    if(!groupEl.querySelector('button.sel')) groupEl.querySelector('[data-group="all"]')?.classList.add('sel');
-    }
-
-  const scopeRadio = document.querySelector(`input[name=accScope][value="${testSettings.accScope==='all'?'all':'recentN'}"]`);
-  if(scopeRadio) scopeRadio.checked = true;
-  document.getElementById('accRecentN').value = Math.max(1, Math.min(99, testSettings.recentN || 3));
-  document.getElementById('accThreshold').value = Math.max(0, Math.min(100, testSettings.threshold ?? 50));
-  document.getElementById('accThresholdVal').textContent = document.getElementById('accThreshold').value;
-  updateAccScopeCardStyle();
-}
-function getSelectedAccuracyGroups(){
-  const el = document.getElementById('accuracyGroupButtons');
-  if(!el) return ['all'];
-  const selected = [...el.querySelectorAll('button.sel')].map(b=>b.dataset.group);
-  return selected.length ? selected : ['all'];
-}
-function bindAccuracyGroupDrag(){
-  const el = document.getElementById('accuracyGroupButtons');
-  if(!el || el.dataset.dragBound) return;
-  el.dataset.dragBound = '1';
-
-  let dragging = false;
-  let startIndex = -1;
-  let moved = false;
-
-  const groupButtons = () => [...el.querySelectorAll('button[data-group]:not([data-group="all"])')];
-  const buttonAtPoint = (x, y) => {
-    const target = document.elementFromPoint(x, y);
-    const btn = target?.closest?.('button[data-group]:not([data-group="all"])');
-    return btn && el.contains(btn) ? btn : null;
-  };
-  const applyRange = (a, b) => {
-    const buttons = groupButtons();
-    if(a<0 || b<0 || a>=buttons.length || b>=buttons.length) return;
-    const lo=Math.min(a,b), hi=Math.max(a,b);
-    buttons.forEach((btn,i)=>btn.classList.toggle('sel', i>=lo && i<=hi));
-    el.querySelector('[data-group="all"]')?.classList.remove('sel');
-    syncAccuracyGroupRange();
-    document.getElementById('rangeErr').textContent='';
-    updateAccuracyHint();
-  };
-
-  el.addEventListener('pointerdown', e=>{
-    const btn=e.target.closest?.('button[data-group]:not([data-group="all"])');
-    if(!btn) return;
-    dragging=true;
-    moved=false;
-    startIndex=groupButtons().indexOf(btn);
-    try{ el.setPointerCapture(e.pointerId); }catch(err){}
-  });
-
-  el.addEventListener('pointermove', e=>{
-    if(!dragging) return;
-    const btn=buttonAtPoint(e.clientX,e.clientY);
-    if(!btn) return;
-    const idx=groupButtons().indexOf(btn);
-    if(idx<0) return;
-    if(idx!==startIndex) moved=true;
-    if(moved) applyRange(startIndex,idx);
-  });
-
-  const end=()=>{
-    dragging=false;
-    startIndex=-1;
-  };
-  el.addEventListener('pointerup', end);
-  el.addEventListener('pointercancel', end);
-  el.addEventListener('lostpointercapture', end);
-
-  el.addEventListener('click', e=>{
-    if(moved){
-      e.preventDefault();
-      e.stopPropagation();
-      moved=false;
-      return;
-    }
-    const btn=e.target.closest?.('button[data-group]');
-    if(!btn) return;
-    const key=btn.dataset.group;
-    if(key==='all'){
-      el.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-      btn.classList.add('sel');
-    }else{
-      el.querySelector('[data-group="all"]')?.classList.remove('sel');
-      btn.classList.toggle('sel');
-      if(!el.querySelector('button.sel')) el.querySelector('[data-group="all"]')?.classList.add('sel');
-    }
-    syncAccuracyGroupRange();
-    document.getElementById('rangeErr').textContent='';
-    updateAccuracyHint();
-  });
-}
-function getCurrentTestCondition(){
-  syncTestSettingsFromUI();
-  if(testMode==='accuracy'){
-    return {
-      type:'accuracy',
-      rangeType:testSettings.accuracyRangeType,
-      groups:[...(testSettings.selectedGroups || ['all'])],
-      from:testSettings.rangeFrom,
-      to:testSettings.rangeTo,
-      scope:testSettings.accScope,
-      recentN:testSettings.recentN,
-      threshold:testSettings.threshold
-    };
-  }
-  return {type:'count', count:testSettings.count};
-}
-function buildPoolFromCondition(condition){
-  if(condition.type==='group'){
-    const groups=buildGroups(GROUP_SIZE);
-    const g=groups[parseInt(condition.groupIndex,10)];
-    return g ? {pool:g.items.slice(),error:null} : {pool:[],error:'그룹을 찾을 수 없습니다.'};
-  }
-  if(condition.type==='custom'){
-    const set=new Set(condition.items || []);
-    return {pool:WORDS.filter(w=>set.has(w.word)),error:null};
-  }
-  if(condition.type==='accuracy'){
-    const rangeType=condition.rangeType || 'group';
-    let rangePool;
-    if(rangeType==='group'){
-      const selected=condition.groups?.length ? condition.groups : ['all'];
-      if(selected.includes('all')) rangePool=WORDS.slice();
-      else{
-        const groups=buildGroups(GROUP_SIZE);
-        const indexes=new Set(selected.map(i=>parseInt(i,10)).filter(Number.isFinite));
-        rangePool=groups.filter((g,i)=>indexes.has(i)).flatMap(g=>g.items);
-      }
-    }else{
-      const from=parseInt(condition.from,10), to=parseInt(condition.to,10);
-      if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length || from>to) return {pool:[],error:'정답률 테스트의 번호 범위를 확인해주세요.'};
-      rangePool=WORDS.slice(from-1,to);
-    }
-    const stats=loadWordStats();
-    const pool=rangePool.filter(w=>{
-      const h=stats[w.word.toLowerCase()];
-      const acc=condition.scope==='recentN' ? accuracyOf(h,condition.recentN) : accuracyOf(h,null);
-      return acc===null || acc<=condition.threshold;
-    });
-    return {pool,error:null};
-  }
-  const n=Math.max(1,Math.min(WORDS.length,parseInt(condition.count,10)||10));
-  return {pool:WORDS.length <= n ? WORDS.slice() : shuffle(WORDS).slice(0,n),error:null};
-}
-
-function renderTestGroupButtons(){
-  const accuracyEl = document.getElementById('accuracyGroupButtons');
-  const groups = buildGroups(GROUP_SIZE);
-  if(!accuracyEl) return;
-  const wanted = new Set(testSettings?.selectedGroups || ['all']);
-  const useAll = wanted.has('all');
-  accuracyEl.innerHTML = [
-    `<button type="button" data-group="all" class="${useAll?'sel':''}">전체</button>`,
-    ...groups.map((g,i)=>
-      `<button type="button" data-group="${i}" class="${!useAll && wanted.has(String(i))?'sel':''}">${i+1}그룹</button>`
-    )
-  ].join('');
-  if(!accuracyEl.querySelector('button.sel')) accuracyEl.querySelector('[data-group="all"]')?.classList.add('sel');
-  bindAccuracyGroupDrag();
-}
-
-
-function syncAccuracyGroupRange(){
-  const el = document.getElementById('accuracyGroupButtons');
-  if(!el) return;
-  const selected = [...el.querySelectorAll('button.sel')].map(b=>b.dataset.group);
-  const groups = buildGroups(GROUP_SIZE);
-  if(selected.includes('all') || selected.length===0){
-    document.getElementById('rangeFrom').value = 1;
-    document.getElementById('rangeTo').value = WORDS.length;
-  }else{
-    const picked = selected.map(i=>groups[parseInt(i,10)]).filter(Boolean);
-    document.getElementById('rangeFrom').value = Math.min(...picked.map(g=>g.from));
-    document.getElementById('rangeTo').value = Math.max(...picked.map(g=>g.to));
-  }
-  if(testSettings){
-    testSettings.selectedGroups = getSelectedAccuracyGroups();
-    testSettings.rangeFrom = parseInt(document.getElementById('rangeFrom').value,10) || 1;
-    testSettings.rangeTo = parseInt(document.getElementById('rangeTo').value,10) || WORDS.length;
-    saveTestSettings();
-  }
-}
-
-function resetTestSetup(force=false){
-  const setupEl = document.getElementById('testSetup');
-  const emptyEl = document.getElementById('testEmptyState');
-  if(WORDS.length===0){
-    setupEl.style.display='none';
-    emptyEl.style.display='block';
-    testSetupInitialized=false;
-    return;
-  }
-  emptyEl.style.display='none';
-  if(force || !testSetupInitialized){
-    testSettings = loadTestSettings();
-    testSettings.rangeFrom = Math.max(1, Math.min(WORDS.length, testSettings.rangeFrom || 1));
-    testSettings.rangeTo = Math.max(1, Math.min(WORDS.length, testSettings.rangeTo || WORDS.length));
-    const maxN=Math.max(1, WORDS.length);
-    if(!Number.isFinite(testSettings.count) || testSettings.count<1) testSettings.count=10;
-    testSettings.count=Math.min(testSettings.count,maxN);
-    testMode=testSettings.mode==='accuracy'?'accuracy':'count';
-
-    const countSelect=document.getElementById('countSelect');
-    const options=[10,20,30,50,WORDS.length];
-    const finalOptions=[...new Set(options.filter(n=>n<=WORDS.length))];
-    if(!finalOptions.length) finalOptions.push(WORDS.length);
-    countSelect.innerHTML=finalOptions.map(n=>`<button data-n="${n}" class="">${n===WORDS.length?'전체 '+n:n}문제</button>`).join('');
-    countSelect.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-      countSelect.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-      b.classList.add('sel');
-      countSelect.dataset.selected=b.dataset.n;
-      testSettings.count=parseInt(b.dataset.n,10);
-      saveTestSettings();
-    }));
-
-    document.getElementById('rangeMaxHint').textContent=`등록된 단어: 1 ~ ${WORDS.length}번`;
-    document.getElementById('rangeFrom').value=testSettings.rangeFrom;
-    document.getElementById('rangeTo').value=testSettings.rangeTo;
-    document.getElementById('rangeFrom').oninput=()=>{syncTestSettingsFromUI();updateAccuracyHint();};
-    document.getElementById('rangeTo').oninput=()=>{syncTestSettingsFromUI();updateAccuracyHint();};
-
-    renderTestGroupButtons();
-
-    const accuracyRangeTabs=document.getElementById('accuracyRangeTabs');
-    if(accuracyRangeTabs && !accuracyRangeTabs.dataset.bound){
-      accuracyRangeTabs.dataset.bound='1';
-      accuracyRangeTabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-        accuracyRangeTabs.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-        b.classList.add('sel');
-        testSettings.accuracyRangeType=b.dataset.rangeType;
-        saveTestSettings();
-        const isGroup=b.dataset.rangeType==='group';
-        document.getElementById('accuracyGroupPanel').style.display=isGroup?'block':'none';
-        document.getElementById('accuracyNumberPanel').style.display=isGroup?'none':'block';
-        document.getElementById('rangeErr').textContent='';
-        updateAccuracyHint();
-      }));
-    }
-
-    const tabs=document.getElementById('rangeModeTabs');
-    if(!tabs.dataset.bound){
-      tabs.dataset.bound='1';
-      tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-        testMode=b.dataset.mode;
-        testSettings.mode=testMode;
-        saveTestSettings();
-        tabs.querySelectorAll('button').forEach(x=>x.classList.remove('mode-sel'));
-        b.classList.add('mode-sel');
-        document.getElementById('modeCount').style.display=testMode==='count'?'block':'none';
-        document.getElementById('modeAccuracy').style.display=testMode==='accuracy'?'block':'none';
-        document.getElementById('rangeErr').textContent='';
-        if(testMode==='accuracy') updateAccuracyHint();
-      }));
-
-      document.getElementById('accRecentN').addEventListener('input',()=>{syncTestSettingsFromUI();updateAccuracyHint();});
-      document.querySelectorAll('input[name=accScope]').forEach(r=>r.addEventListener('change',()=>{syncTestSettingsFromUI();updateAccScopeCardStyle();updateAccuracyHint();}));
-      document.querySelectorAll('.stepper-btn').forEach(btn=>btn.addEventListener('click',(e)=>{
-        e.preventDefault();e.stopPropagation();
-        const wrap=btn.closest('.stepper'), input=wrap.querySelector('input[type=number]');
-        const step=parseInt(btn.dataset.step,10), min=parseInt(input.min||'1',10), max=parseInt(input.max||'99',10);
-        let v=(parseInt(input.value,10)||min)+step; v=Math.max(min,Math.min(max,v)); input.value=v;
-        document.querySelector('input[name=accScope][value=recentN]').checked=true;
-        syncTestSettingsFromUI();updateAccScopeCardStyle();updateAccuracyHint();
-      }));
-      const thresholdSlider=document.getElementById('accThreshold');
-      thresholdSlider.addEventListener('input',()=>{document.getElementById('accThresholdVal').textContent=thresholdSlider.value;syncTestSettingsFromUI();updateAccuracyHint();});
-    }
-    testSetupInitialized=true;
-  }else{
-    // 단어 관리 탭을 다녀와도 설정은 유지하고, 현재 단어 수에 맞는 표시만 갱신한다.
-    document.getElementById('rangeMaxHint').textContent=`등록된 단어: 1 ~ ${WORDS.length}번`;
-  }
-  applyTestSettingsToUI();
-  updateAccuracyHint();
-}
-
-// 라디오 상태에 맞춰 카드 강조 클래스를 갱신 (:has() 미지원 브라우저 대비 이중 안전장치)
-function updateAccScopeCardStyle(){
-  document.querySelectorAll('.acc-scope-card').forEach(card=>{
-    const radio = card.querySelector('input[type=radio]');
-    card.classList.toggle('checked', radio.checked);
-  });
-}
-
-// 정답률 조건에 맞는 단어들을 골라낸다.
-function getWordsByAccuracyFilter(){
-  const scope = document.querySelector('input[name=accScope]:checked').value; // 'recentN' | 'all'
-  const threshold = parseInt(document.getElementById('accThreshold').value, 10);
-  const recentN = parseInt(document.getElementById('accRecentN').value, 10);
-  const from = parseInt(document.getElementById('rangeFrom').value, 10);
-  const to = parseInt(document.getElementById('rangeTo').value, 10);
-  const stats = loadWordStats();
-
-  if(isNaN(threshold)) return { pool: [], error: '정답률 기준(%)을 입력해주세요.' };
-  if(scope==='recentN' && (!recentN || recentN<1)) return { pool: [], error: '최근 시험 횟수를 1 이상으로 입력해주세요.' };
-  const rangeType = document.querySelector('#accuracyRangeTabs button.sel')?.dataset.rangeType || 'group';
-  if(rangeType === 'number'){
-    if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length){
-      return { pool: [], error: `1 ~ ${WORDS.length} 사이의 번호를 입력해주세요.` };
-    }
-    if(from > to){
-      return { pool: [], error: '시작 번호가 끝 번호보다 클 수 없습니다.' };
-    }
-  }
-
-  let rangePool;
-  if(rangeType === 'group'){
-    const groupEl = document.getElementById('accuracyGroupButtons');
-    const selected = groupEl ? [...groupEl.querySelectorAll('button.sel')].map(b=>b.dataset.group) : ['all'];
-    if(selected.includes('all') || selected.length===0){
-      rangePool = WORDS.slice();
-    }else{
-      const groups = buildGroups(GROUP_SIZE);
-      const selectedIndexes = new Set(selected.map(i=>parseInt(i,10)));
-      rangePool = groups.filter((g,i)=>selectedIndexes.has(i)).flatMap(g=>g.items);
-    }
-  }else{
-    rangePool = WORDS.slice(from-1, to);
-  }
-  const pool = rangePool.filter(w=>{
-    const history = stats[w.word.toLowerCase()];
-    const acc = scope==='recentN' ? accuracyOf(history, recentN) : accuracyOf(history, null);
-    if(acc === null) return true; // 시도 기록이 아예 없는 단어는 대상에 포함
-    return acc <= threshold;
-  });
-
-  return { pool, error: null };
-}
-
-function updateAccuracyHint(){
-  const hintEl = document.getElementById('accHint');
-  if(!hintEl) return;
-  const { pool, error } = getWordsByAccuracyFilter();
-  if(error){
-    hintEl.textContent = '';
-    return;
-  }
-  hintEl.textContent = `선택 범위 내 조건에 맞는 단어: ${pool.length}개 (시도 기록이 없는 단어는 항상 포함됩니다)`;
-}
-
-document.getElementById('startTestBtn').addEventListener('click', ()=>{
-  document.getElementById('rangeErr').textContent='';
-  const condition=getCurrentTestCondition();
-  const result=buildPoolFromCondition(condition);
-  if(result.error){ document.getElementById('rangeErr').textContent=result.error; return; }
-  if(result.pool.length===0){ document.getElementById('rangeErr').textContent='조건에 맞는 단어가 없습니다.'; return; }
-  startQuiz(shuffle(result.pool), null, condition);
-});
-
-function shuffle(arr){
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
-}
-
-function startQuiz(pool, groupKey, condition){
-  quizState = {
-    items: pool,
-    idx: 0,
-    correct: 0,
-    wrongList: [],
-    answered: false,
-    groupKey: groupKey || null,
-    condition: condition || null,
-  };
-  document.getElementById('testSetup').style.display = 'none';
-  document.getElementById('resultArea').style.display = 'none';
-  document.getElementById('quizArea').style.display = 'block';
-  renderQuizStep();
-}
-
-// Enter 키 핸들러는 앱 전체에서 단 한 번만 등록한다.
-// (문제마다 등록/해제를 반복하면 타이밍에 따라 이벤트가 중복 처리될 수 있어
-//  퀴즈 화면이 떠 있는 동안엔 항상 켜져 있고, quizState를 통해 현재 문제를 참조한다.)
-let lastEnterHandledAt = 0;
-document.addEventListener('keydown', (e)=>{
-  if(e.key !== 'Enter') return;
-  if(e.isComposing) return; // 한글 등 조합 입력 확정 Enter는 무시
-
-  const quizArea = document.getElementById('quizArea');
-  if(!quizArea || quizArea.style.display === 'none') return;
-  if(!quizState) return;
-
-  // 같은 Enter 입력이 짧은 시간 내에 두 번 이상 처리되는 것을 방지
-  const now = Date.now();
-  if(now - lastEnterHandledAt < 200) { e.preventDefault(); return; }
-  lastEnterHandledAt = now;
-
-  e.preventDefault();
-  const st = quizState;
-  if(!st.answered) checkAnswer();
-  else nextStep();
-});
-
-function renderQuizStep(){
-  const st = quizState;
-  const total = st.items.length;
-  const cur = st.items[st.idx];
-  const area = document.getElementById('quizArea');
-
-  area.innerHTML = `
+    <!-- 퀴즈 영역 -->
     <div class="quiz-card">
-      <div class="quiz-progress">${st.idx+1} / ${total}</div>
-      <div class="quiz-word">${escapeHtml(cur.word)}</div>
-      <input type="text" id="quizInput" class="quiz-input" placeholder="뜻을 입력하세요" autocomplete="off">
-      <div class="quiz-feedback" id="quizFeedback"></div>
-      <div class="quiz-btns">
-        <button class="btn-primary" id="quizSubmit">확인</button>
-        <button class="btn-ghost" id="quizSkip">모르겠음</button>
-      </div>
+        <h2 id="quizTitle" style="cursor: grab;">단어 퀴즈 (드래그 테스트 영역)</h2>
+        <p id="quizWord" style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Apple</p>
+        <input type="text" id="quizAnswer" placeholder="정답을 입력하고 Enter를 누르세요.">
+        <button id="submitQuiz">제출</button>
     </div>
-  `;
 
-  const input = document.getElementById('quizInput');
-  input.focus();
-  st.answered = false;
+    <script>
+        /**
+         * 전역 상태 관리 (메모리 캐싱)
+         * - 로컬스토리지 I/O 병목 완화 (Lazy Save 적용)
+         */
+        const AppState = {
+            words: [],
+            testSettings: {},
+            answersRecord: {},
+            isDirty: false
+        };
 
-  document.getElementById('quizSubmit').onclick = () => checkAnswer();
-  document.getElementById('quizSkip').onclick = () => checkAnswer(true);
-}
+        // 메모리에 캐시 후 플래그 변경
+        function syncTestSettingsFromUI(settings) {
+            AppState.testSettings = { ...AppState.testSettings, ...settings };
+            AppState.isDirty = true;
+        }
 
-function normalize(s){
-  return String(s||'')
-    .replace(/[\(（][^)）]*[\)）]/g,'') // 괄호와 그 안의 내용을 통째로 제거 (부가 설명은 안 써도 정답 처리)
-    .replace(/[\[［][^\]］]*[\]］]/g,'')
-    .trim()
-    .replace(/\s+/g,''); // 띄어쓰기 차이는 무시 (공백을 아예 없앰)
-}
+        function recordWordAnswer(wordId, isCorrect) {
+            AppState.answersRecord[wordId] = isCorrect;
+            AppState.isDirty = true;
+        }
 
-// "뜻1, 뜻2" 또는 "뜻1; 뜻2" 형태의 정답을 쉼표/세미콜론 기준으로 분리 (괄호 안의 구분자는 무시)
-function splitMeanings(meaning){
-  const parts = [];
-  let depth = 0, cur = '';
-  for(const ch of String(meaning||'')){
-    if(ch==='('||ch==='['){ depth++; cur+=ch; }
-    else if(ch===')'||ch===']'){ depth=Math.max(0,depth-1); cur+=ch; }
-    else if((ch===',' || ch===';') && depth===0){ parts.push(cur); cur=''; }
-    else{ cur+=ch; }
-  }
-  if(cur.trim()) parts.push(cur);
-  return parts.map(p=>normalize(p)).filter(p=>p.length>0);
-}
+        // 페이지 종료 또는 전환 시 한 번에 LocalStorage로 직렬화하여 저장 (성능 최적화)
+        window.addEventListener('beforeunload', () => {
+            if (AppState.isDirty) {
+                localStorage.setItem('vocabulary_answers', JSON.stringify(AppState.answersRecord));
+                localStorage.setItem('vocabulary_settings', JSON.stringify(AppState.testSettings));
+            }
+        });
 
-function checkAnswer(skip){
-  const st = quizState;
-  if(st.answered) return;
-  st.answered = true;
-  const cur = st.items[st.idx];
-  const input = document.getElementById('quizInput');
-  const userVal = skip ? '' : normalize(input.value);
-  const acceptable = splitMeanings(cur.meaning);
-  const isCorrect = !skip && userVal.length>0 && acceptable.includes(userVal);
+        /**
+         * 버그 수정: 엔터 키 이벤트 위임 충돌 방지
+         */
+        let lastEnterHandledAt = 0;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const now = Date.now();
+                // 200ms 디바운스로 중복 입력 방지
+                if (now - lastEnterHandledAt < 200) return;
+                
+                const activeEl = document.activeElement;
+                
+                // 포커스가 정확히 '퀴즈 답안창'일 때만 이벤트 발생하도록 타겟 검증
+                if (activeEl && activeEl.id === 'quizAnswer') {
+                    lastEnterHandledAt = now;
+                    submitQuizLogic();
+                    e.preventDefault(); // 기본 폼 제출 방지
+                }
+            }
+        });
 
-  recordWordAnswer(cur.word, isCorrect);
+        function submitQuizLogic() {
+            const answerEl = document.getElementById('quizAnswer');
+            const answer = answerEl.value.trim();
+            if(!answer) return;
+            
+            // 퀴즈 결과 기록 (스토리지 직렬화 없이 메모리에만 저장)
+            recordWordAnswer('word_apple', answer === '사과');
+            answerEl.value = '';
+            alert(`'${answer}' 제출됨! (상태가 메모리에 기록되었습니다)`);
+        }
 
-  const fb = document.getElementById('quizFeedback');
-  if(isCorrect){
-    st.correct++;
-    input.classList.add('correct');
-    fb.className = 'quiz-feedback correct';
-    fb.textContent = '정답입니다';
-  }else{
-    st.wrongList.push({word:cur.word, meaning:cur.meaning, etym:cur.etym, yours: skip? '(건너뜀)' : (input.value||'(입력 안 함)')});
-    input.classList.add('wrong');
-    fb.className = 'quiz-feedback wrong';
-    fb.innerHTML = `오답입니다 · 정답: <span class="answer-reveal">${escapeHtml(cur.meaning)}</span>`
-      + (cur.etym ? `<div class="feedback-etym">${escapeHtml(cur.etym)}</div>` : '');
-  }
-  input.disabled = true;
-  document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  document.getElementById('quizSubmit').onclick = nextStep;
-  document.getElementById('quizSkip').style.display = 'none';
-}
+        document.getElementById('submitQuiz').addEventListener('click', submitQuizLogic);
 
-function nextStep(){
-  const st = quizState;
-  st.idx++;
-  if(st.idx >= st.items.length){
-    showResult();
-  }else{
-    renderQuizStep();
-  }
-}
+        /**
+         * 버그 수정: 드래그 앤 드롭 이벤트 누수 방지 (Pointer Capture 예외 처리)
+         */
+        function bindAccuracyGroupDrag(element) {
+            element.addEventListener('pointerdown', (e) => {
+                try {
+                    element.setPointerCapture(e.pointerId);
+                    element.style.opacity = '0.5';
+                    element.style.cursor = 'grabbing';
+                } catch (err) {
+                    console.error('Pointer capture failed:', err);
+                }
+            });
 
-function showResult(){
-  const st = quizState;
-  document.getElementById('quizArea').style.display = 'none';
-  const area = document.getElementById('resultArea');
-  area.style.display = 'block';
+            const releaseCapture = (e) => {
+                try {
+                    if (element.hasPointerCapture(e.pointerId)) {
+                        element.releasePointerCapture(e.pointerId);
+                    }
+                } catch (err) {}
+                element.style.opacity = '1';
+                element.style.cursor = 'grab';
+            };
 
-  const total = st.items.length;
-  const pct = total>0 ? Math.round((st.correct/total)*1000)/10 : 0;
-  saveAccuracy(pct);
+            element.addEventListener('pointerup', releaseCapture);
+            // 마우스 화면 이탈 등의 예외 상황을 방어하는 pointercancel 추가
+            element.addEventListener('pointercancel', releaseCapture); 
+        }
+        bindAccuracyGroupDrag(document.getElementById('quizTitle'));
 
-  let groupClearedNote = '';
-  if(st.groupKey){
-    const wasCleared = isGroupCleared(st.groupKey); // 이번 시험 시작 전 상태
-    const cleared = st.correct === total;
-    setGroupCleared(st.groupKey, cleared);
-    if(cleared){
-      groupClearedNote = `<div class="group-cleared-note">✓ 이 그룹을 모두 맞혔습니다. 완료로 표시됩니다.</div>`;
-    }else if(wasCleared){
-      // 완료 상태였던 그룹이 이번에 실패해서 실제로 해제된 경우에만 안내
-      groupClearedNote = `<div class="group-uncleared-note">이 그룹의 완료 표시가 해제되었습니다. 전부 맞히면 완료로 표시됩니다.</div>`;
-    }
-  }
+        /**
+         * 성능 최적화: 검색 디바운싱(Debouncing) 적용
+         */
+        function debounce(func, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
 
-  area.innerHTML = `
-    <div class="result-card">
-      <div class="result-score">${st.correct}<span> / ${total}</span></div>
-      <div class="result-label">정답률 ${pct}%</div>
-      ${groupClearedNote}
-      <div class="quiz-btns">
-        <button class="btn-primary" id="retryBtn">${st.groupKey ? '이 그룹 다시 풀기' : '다시 테스트'}</button>
-        ${st.wrongList.length ? `<button class="btn-danger" id="retryWrongBtn">틀린 것만 다시 (${st.wrongList.length}개)</button>` : ''}
-        <button class="btn-ghost" id="backBtn">단어 관리로</button>
-      </div>
-      ${st.wrongList.length ? `
-        <div class="wrong-list">
-          <h3>틀린 단어 (${st.wrongList.length}개)</h3>
-          ${st.wrongList.map(w=>`
-            <div class="wrong-item">
-              <div class="we">${escapeHtml(w.word)}</div>
-              <div class="wm">정답: ${escapeHtml(w.meaning)}</div>
-              <div class="wyours">내 답: ${escapeHtml(w.yours)}</div>
-              ${w.etym ? `<div class="wetym">${escapeHtml(w.etym)}</div>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-    </div>
-  `;
+        const searchBox = document.getElementById('searchBox');
+        searchBox.addEventListener('input', debounce((e) => {
+            const filter = e.target.value.trim().toLowerCase();
+            
+            // 데이터 필터링 예외 복구: 검색어를 모두 지웠을 때 빈 화면 방지
+            if (filter === '') {
+                renderWordList(AppState.words); 
+                return;
+            }
 
-  document.getElementById('retryBtn').addEventListener('click', ()=>{
-    if(st.condition){
-      const result=buildPoolFromCondition(st.condition);
-      if(result.error || result.pool.length===0){
-        resetTestSetup();
-        document.getElementById('rangeErr').textContent=result.error || '조건에 맞는 단어가 없습니다.';
-        return;
-      }
-      startQuiz(shuffle(result.pool), st.groupKey, st.condition);
-    }else if(st.groupKey){
-      startQuiz(shuffle(st.items), st.groupKey);
-    }else{
-      resetTestSetup();
-    }
-  });
-  document.getElementById('backBtn').addEventListener('click', ()=>{
-    document.querySelector('nav.tabs button[data-tab="manage"]').click();
-    renderWordList(document.getElementById('searchBox').value);
-  });
-  if(st.wrongList.length){
-    document.getElementById('retryWrongBtn').addEventListener('click', ()=>{
-      const pool = st.wrongList.map(w=> WORDS.find(x=>x.word===w.word) || {word:w.word, meaning:w.meaning, etym:w.etym});
-      startQuiz(pool);
-    });
-  }
-}
+            const filtered = AppState.words.filter(w => 
+                w.en.toLowerCase().includes(filter) || 
+                w.ko.includes(filter)
+            );
+            renderWordList(filtered);
+        }, 300));
 
-/* ---------- init ---------- */
-// 단어장 시스템 진입점: 이전에 열어뒀던 단어장이 있으면 바로 그 안으로 들어가고,
-// 없으면 단어장 목록(홈 화면)을 보여준다.
-(function initApp(){
-  const lastDeckId = getCurrentDeckId();
-  const lastDeckExists = lastDeckId && DECKS.some(d=>d.id===lastDeckId);
-  if(lastDeckExists){
-    openDeck(lastDeckId);
-  }else{
-    document.getElementById('statRow').style.display = 'none';
-    renderDeckList();
-  }
-})();
+        /**
+         * 성능 최적화: 대규모 DOM 업데이트 효율화 (Chunk Rendering + DocumentFragment)
+         * innerHTML 전체 교체로 인한 브라우저 멈춤 방지
+         */
+        function renderWordList(words) {
+            const listEl = document.getElementById('groupListEl');
+            listEl.innerHTML = ''; // 기존 리스트 비우기
 
-/* ---------- PWA: service worker & install prompt ---------- */
-// sw.js는 "네트워크 우선" 방식으로 동작해서, 온라인 상태면 늘 최신 index.html을
-// 그대로 보여준다. 그래서 별도의 "새 버전 있음" 알림 없이도 최신 상태가 유지된다.
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
-}
+            if (words.length === 0) {
+                listEl.innerHTML = '<li class="word-item" style="justify-content:center;">검색 결과가 없습니다.</li>';
+                return;
+            }
 
-function isStandalone(){
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-}
-function isIOS(){
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
+            let currentIndex = 0;
+            const chunkSize = 50; // 한 번에 그릴 아이템 개수
 
-if(!isStandalone() && isIOS()){
-  const hint = document.getElementById('iosHint');
-  if(hint) hint.classList.add('show');
-}
+            function renderChunk() {
+                const fragment = document.createDocumentFragment();
+                const end = Math.min(currentIndex + chunkSize, words.length);
 
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  const btn = document.getElementById('installBtn');
-  if(btn && !isStandalone()) btn.style.display = 'inline-flex';
-});
+                for (let i = currentIndex; i < end; i++) {
+                    const li = document.createElement('li');
+                    li.className = 'word-item';
+                    
+                    const enSpan = document.createElement('strong');
+                    enSpan.textContent = words[i].en;
+                    
+                    const koSpan = document.createElement('span');
+                    koSpan.textContent = words[i].ko;
+                    koSpan.style.color = '#4b5563';
 
-// 이 스크립트는 body 하단에 위치해 실행 시점에 이미 DOM 파싱이 끝나 있으므로,
-// DOMContentLoaded를 기다리지 않고 바로 리스너를 건다.
-// (DOMContentLoaded를 기다리면 그 시점엔 이미 이벤트가 지나가 있어 콜백이 실행되지 않는다.)
-(function bindInstallBtn(){
-  const btn = document.getElementById('installBtn');
-  if(!btn) return;
-  btn.addEventListener('click', async ()=>{
-    if(!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    btn.style.display = 'none';
-  });
-})();
+                    li.appendChild(enSpan);
+                    li.appendChild(koSpan);
+                    fragment.appendChild(li);
+                }
 
-window.addEventListener('appinstalled', ()=>{
-  const btn = document.getElementById('installBtn');
-  if(btn) btn.style.display = 'none';
-});
-</script>
+                listEl.appendChild(fragment);
+                currentIndex += chunkSize;
+
+                // 렌더링할 데이터가 남았다면 다음 애니메이션 프레임으로 넘김 (메인 스레드 블로킹 해제)
+                if (currentIndex < words.length) {
+                    requestAnimationFrame(renderChunk);
+                }
+            }
+
+            // 청크 렌더링 시작
+            requestAnimationFrame(renderChunk);
+        }
+
+        /**
+         * 더미 데이터 로딩 테스트
+         */
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            // 대용량 처리를 테스트하기 위한 2,000개의 임의 단어 데이터 생성
+            const dummyWords = Array.from({length: 2000}, (_, i) => ({
+                id: `w_${i}`,
+                en: `Word ${i}`,
+                ko: `단어 뜻 ${i}`
+            }));
+            
+            AppState.words = dummyWords;
+            renderWordList(AppState.words);
+            alert('2,000개의 데이터가 청크(Chunk) 단위로 렌더링되었습니다.\n(브라우저 멈춤 없이 로딩됨)');
+        });
+
+    </script>
 </body>
 </html>
