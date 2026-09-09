@@ -17,225 +17,405 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  /* ===== CSS: 전체 UI 스타일 정의 시작 ===== */
+  /* 아래 규칙은 :root 요소의 표시 방식을 정의합니다. */
   :root{
+  /* --ink: 해당 CSS 속성 */
     --ink:#1c1b1a;
+  /* --paper: 해당 CSS 속성 */
     --paper:#faf7f2;
+  /* --card: 해당 CSS 속성 */
     --card:#ffffff;
+  /* --line: 해당 CSS 속성 */
     --line:#e4ddd2;
+  /* --accent: 해당 CSS 속성 */
     --accent:#8b3a2f;
+  /* --accent-soft: 해당 CSS 속성 */
     --accent-soft:#f3e2dc;
+  /* --good: 해당 CSS 속성 */
     --good:#2f6b4f;
+  /* --good-soft: 해당 CSS 속성 */
     --good-soft:#e5f1ea;
+  /* --bad: 해당 CSS 속성 */
     --bad:#a13a2f;
+  /* --bad-soft: 해당 CSS 속성 */
     --bad-soft:#fbe8e4;
+  /* --muted: 해당 CSS 속성 */
     --muted:#78716a;
   }
   *{
+  /* box-sizing: 해당 CSS 속성 */
     box-sizing:border-box;
     -webkit-tap-highlight-color:transparent; /* 안드로이드/iOS에서 버튼 탭 시 뜨는 파란/회색 반투명 하이라이트 제거 */
   }
+  /* 아래 규칙은 body 요소의 표시 방식을 정의합니다. */
   body{
+  /* margin: 요소 외부 여백 */
     margin:0;
+  /* background: 요소의 배경 */
     background:var(--paper);
+  /* color: 요소의 글자 색상 */
     color:var(--ink);
+  /* font-family: 글꼴 */
     font-family:'Noto Sans KR', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+  /* -webkit-font-smoothing: 해당 CSS 속성 */
     -webkit-font-smoothing:antialiased;
   }
   .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
 
   header.top{margin-bottom:24px;}
+  /* 아래 규칙은 .brand 요소의 표시 방식을 정의합니다. */
   .brand{
+  /* font-family: 글꼴 */
     font-family: Georgia, 'Noto Serif KR', serif;
+  /* font-size: 글자 크기 */
     font-size:26px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* letter-spacing: 해당 CSS 속성 */
     letter-spacing:-0.01em;
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:baseline;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
   }
+  /* 아래 규칙은 .brand small 요소의 표시 방식을 정의합니다. */
   .brand small{
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* font-weight: 글자 굵기 */
     font-weight:400;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
+  /* 아래 규칙은 .stat-row 요소의 표시 방식을 정의합니다. */
   .stat-row{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* margin-top: 해당 CSS 속성 */
     margin-top:14px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .stat-pill 요소의 표시 방식을 정의합니다. */
   .stat-pill{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:999px;
+  /* padding: 요소 내부 여백 */
     padding:6px 14px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
   .stat-pill b{color:var(--ink);}
 
+  /* 아래 규칙은 .install-btn 요소의 표시 방식을 정의합니다. */
   .install-btn{
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:999px;
+  /* padding: 요소 내부 여백 */
     padding:6px 14px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* display: 요소의 화면 표시 방식 */
     display:inline-flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:4px;
   }
+  /* 아래 규칙은 .ios-hint 요소의 표시 방식을 정의합니다. */
   .ios-hint{
+  /* display: 요소의 화면 표시 방식 */
     display:none;
+  /* font-size: 글자 크기 */
     font-size:12px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin-top: 해당 CSS 속성 */
     margin-top:10px;
+  /* line-height: 줄 간격 */
     line-height:1.5;
   }
   .ios-hint.show{display:block;}
 
   /* ---------- Deck home ---------- */
+  /* 아래 규칙은 .deck-intro 요소의 표시 방식을 정의합니다. */
   .deck-intro{
+  /* margin: 요소 외부 여백 */
     margin:20px 0 16px;
   }
+  /* 아래 규칙은 .deck-intro p 요소의 표시 방식을 정의합니다. */
   .deck-intro p{
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* line-height: 줄 간격 */
     line-height:1.6;
+  /* margin: 요소 외부 여백 */
     margin:0;
   }
+  /* 아래 규칙은 .deck-create-card 요소의 표시 방식을 정의합니다. */
   .deck-create-card{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:20px;
   }
+  /* 아래 규칙은 .deck-create-card input 요소의 표시 방식을 정의합니다. */
   .deck-create-card input{
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:1;
+  /* padding: 요소 내부 여백 */
     padding:11px 14px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:9px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* background: 요소의 배경 */
     background:#fff;
   }
+  /* 아래 규칙은 .deck-create-card button 요소의 표시 방식을 정의합니다. */
   .deck-create-card button{
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:9px;
+  /* padding: 요소 내부 여백 */
     padding:11px 18px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
+  /* 아래 규칙은 .deck-card 요소의 표시 방식을 정의합니다. */
   .deck-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:12px;
+  /* padding: 요소 내부 여백 */
     padding:16px 18px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:10px;
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:12px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* transition: 상태 변화 애니메이션 */
     transition:border-color .15s;
   }
   .deck-card:hover{border-color:var(--accent);}
   .deck-card-main{flex:1; min-width:0;}
+  /* 아래 규칙은 .deck-card-name 요소의 표시 방식을 정의합니다. */
   .deck-card-name{
+  /* font-size: 글자 크기 */
     font-size:16px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:4px;
+  /* white-space: 해당 CSS 속성 */
     white-space:nowrap;
+  /* overflow: 넘치는 내용 처리 방식 */
     overflow:hidden;
+  /* text-overflow: 해당 CSS 속성 */
     text-overflow:ellipsis;
   }
+  /* 아래 규칙은 .deck-card-meta 요소의 표시 방식을 정의합니다. */
   .deck-card-meta{
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
+  /* 아래 규칙은 .deck-card-actions 요소의 표시 방식을 정의합니다. */
   .deck-card-actions{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:6px;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
+  /* 아래 규칙은 .deck-rename-btn, .deck-delete-btn 요소의 표시 방식을 정의합니다. */
   .deck-rename-btn, .deck-delete-btn{
+  /* background: 요소의 배경 */
     background:none;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:7px;
+  /* padding: 요소 내부 여백 */
     padding:6px 10px;
+  /* font-size: 글자 크기 */
     font-size:12px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
   .deck-delete-btn{color:var(--bad);}
+  /* 아래 규칙은 .deck-empty 요소의 표시 방식을 정의합니다. */
   .deck-empty{
+  /* text-align: 텍스트 정렬 */
     text-align:center;
+  /* padding: 요소 내부 여백 */
     padding:50px 20px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* line-height: 줄 간격 */
     line-height:1.7;
   }
 
   /* ---------- Modal ---------- */
+  /* 아래 규칙은 .modal-overlay 요소의 표시 방식을 정의합니다. */
   .modal-overlay{
+  /* position: 요소의 위치 지정 방식 */
     position:fixed;
+  /* inset: 해당 CSS 속성 */
     inset:0;
+  /* background: 요소의 배경 */
     background:rgba(28,27,26,0.45);
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* z-index: 겹침 순서 */
     z-index:100;
+  /* padding: 요소 내부 여백 */
     padding:20px;
   }
+  /* 아래 규칙은 .modal-card 요소의 표시 방식을 정의합니다. */
   .modal-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:14px;
+  /* padding: 요소 내부 여백 */
     padding:22px;
+  /* width: 요소의 너비 */
     width:100%;
+  /* max-width: 해당 CSS 속성 */
     max-width:340px;
+  /* box-shadow: 그림자 효과 */
     box-shadow:0 10px 40px rgba(0,0,0,0.2);
   }
+  /* 아래 규칙은 .modal-card h3 요소의 표시 방식을 정의합니다. */
   .modal-card h3{
+  /* margin: 요소 외부 여백 */
     margin:0 0 14px;
+  /* font-size: 글자 크기 */
     font-size:16px;
   }
+  /* 아래 규칙은 .modal-card p 요소의 표시 방식을 정의합니다. */
   .modal-card p{
+  /* margin: 요소 외부 여백 */
     margin:0 0 18px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* line-height: 줄 간격 */
     line-height:1.6;
+  /* white-space: 해당 CSS 속성 */
     white-space:pre-line;
   }
+  /* 아래 규칙은 .modal-card input[type=text] 요소의 표시 방식을 정의합니다. */
   .modal-card input[type=text]{
+  /* width: 요소의 너비 */
     width:100%;
+  /* box-sizing: 해당 CSS 속성 */
     box-sizing:border-box;
+  /* padding: 요소 내부 여백 */
     padding:11px 13px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:9px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
   }
+  /* 아래 규칙은 .modal-btns 요소의 표시 방식을 정의합니다. */
   .modal-btns{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* justify-content: 주축 정렬 */
     justify-content:flex-end;
   }
+  /* 아래 규칙은 .modal-btns button 요소의 표시 방식을 정의합니다. */
   .modal-btns button{
+  /* padding: 요소 내부 여백 */
     padding:9px 16px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* border: 요소의 테두리 */
     border:none;
   }
   .modal-btn-cancel{background:none; border:1px solid var(--line) !important; color:var(--muted);}
@@ -243,54 +423,97 @@
   .modal-btn-danger{background:var(--bad); color:#fff;}
 
   /* ---------- Deck app header ---------- */
+  /* 아래 규칙은 .deck-app-header 요소의 표시 방식을 정의합니다. */
   .deck-app-header{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:12px;
+  /* margin-top: 해당 CSS 속성 */
     margin-top:18px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:4px;
   }
+  /* 아래 규칙은 .back-to-home-btn 요소의 표시 방식을 정의합니다. */
   .back-to-home-btn{
+  /* background: 요소의 배경 */
     background:none;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* padding: 요소 내부 여백 */
     padding:7px 13px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
+  /* 아래 규칙은 .deck-app-title 요소의 표시 방식을 정의합니다. */
   .deck-app-title{
+  /* font-size: 글자 크기 */
     font-size:15px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* white-space: 해당 CSS 속성 */
     white-space:nowrap;
+  /* overflow: 넘치는 내용 처리 방식 */
     overflow:hidden;
+  /* text-overflow: 해당 CSS 속성 */
     text-overflow:ellipsis;
   }
 
+  /* 아래 규칙은 nav.tabs 요소의 표시 방식을 정의합니다. */
   nav.tabs{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:6px;
+  /* margin: 요소 외부 여백 */
     margin:22px 0 18px;
+  /* border-bottom: 해당 CSS 속성 */
     border-bottom:1px solid var(--line);
   }
+  /* 아래 규칙은 nav.tabs button 요소의 표시 방식을 정의합니다. */
   nav.tabs button{
+  /* appearance: 브라우저 기본 UI 외형 제거/설정 */
     appearance:none;
+  /* border: 요소의 테두리 */
     border:none;
+  /* background: 요소의 배경 */
     background:none;
+  /* font-size: 글자 크기 */
     font-size:15px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* padding: 요소 내부 여백 */
     padding:10px 4px;
+  /* margin-right: 해당 CSS 속성 */
     margin-right:18px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* border-bottom: 해당 CSS 속성 */
     border-bottom:2px solid transparent;
+  /* transform: 해당 CSS 속성 */
     transform:translateY(1px);
   }
+  /* 아래 규칙은 nav.tabs button.active 요소의 표시 방식을 정의합니다. */
   nav.tabs button.active{
+  /* color: 요소의 글자 색상 */
     color:var(--ink);
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* border-bottom: 해당 CSS 속성 */
     border-bottom:2px solid var(--accent);
   }
 
@@ -298,645 +521,1151 @@
   .panel.active{display:block;}
 
   /* Upload card */
+  /* 아래 규칙은 .upload-card 요소의 표시 방식을 정의합니다. */
   .upload-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:14px;
+  /* padding: 요소 내부 여백 */
     padding:22px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
   }
+  /* 아래 규칙은 .upload-card h2 요소의 표시 방식을 정의합니다. */
   .upload-card h2{
+  /* margin: 요소 외부 여백 */
     margin:0 0 6px;
+  /* font-size: 글자 크기 */
     font-size:17px;
   }
+  /* 아래 규칙은 .upload-card p 요소의 표시 방식을 정의합니다. */
   .upload-card p{
+  /* margin: 요소 외부 여백 */
     margin:0 0 16px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* line-height: 줄 간격 */
     line-height:1.6;
   }
+  /* 아래 규칙은 .drop 요소의 표시 방식을 정의합니다. */
   .drop{
+  /* display: 요소의 화면 표시 방식 */
     display:block;
+  /* box-sizing: 해당 CSS 속성 */
     box-sizing:border-box;
+  /* width: 요소의 너비 */
     width:100%;
+  /* border: 요소의 테두리 */
     border:1.5px dashed var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* padding: 요소 내부 여백 */
     padding:26px 16px;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* transition: 상태 변화 애니메이션 */
     transition:border-color .15s, background .15s;
   }
+  /* 아래 규칙은 .drop:hover, .drop.drag 요소의 표시 방식을 정의합니다. */
   .drop:hover, .drop.drag{
+  /* border-color: 해당 CSS 속성 */
     border-color:var(--accent);
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
   }
+  /* 아래 규칙은 .drop input 요소의 표시 방식을 정의합니다. */
   .drop input{
+  /* position: 요소의 위치 지정 방식 */
     position:absolute;
+  /* width: 요소의 너비 */
     width:1px;height:1px;
+  /* padding: 요소 내부 여백 */
     padding:0;margin:-1px;
+  /* overflow: 넘치는 내용 처리 방식 */
     overflow:hidden;
+  /* clip: 해당 CSS 속성 */
     clip:rect(0,0,0,0);
+  /* white-space: 해당 CSS 속성 */
     white-space:nowrap;
+  /* border: 요소의 테두리 */
     border:0;
   }
   .drop .icon{display:block;font-size:26px;margin-bottom:6px;line-height:1;}
   .drop .main{display:block;font-size:14px;font-weight:600;line-height:1.4;}
   .drop .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
 
+  /* 아래 규칙은 .upload-msg 요소의 표시 방식을 정의합니다. */
   .upload-msg{
+  /* margin-top: 해당 CSS 속성 */
     margin-top:12px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* padding: 요소 내부 여백 */
     padding:10px 12px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* display: 요소의 화면 표시 방식 */
     display:none;
   }
   .upload-msg.show{display:block;}
   .upload-msg.ok{background:var(--good-soft);color:var(--good);}
   .upload-msg.err{background:var(--bad-soft);color:var(--bad);}
 
+  /* 아래 규칙은 .manual-add 요소의 표시 방식을 정의합니다. */
   .manual-add{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* margin-top: 해당 CSS 속성 */
     margin-top:14px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .manual-add input 요소의 표시 방식을 정의합니다. */
   .manual-add input{
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:1;
+  /* min-width: 해당 CSS 속성 */
     min-width:110px;
+  /* padding: 요소 내부 여백 */
     padding:9px 10px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* background: 요소의 배경 */
     background:#fff;
   }
+  /* 아래 규칙은 .manual-add button 요소의 표시 방식을 정의합니다. */
   .manual-add button{
+  /* padding: 요소 내부 여백 */
     padding:9px 16px;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* background: 요소의 배경 */
     background:var(--ink);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
   }
 
   /* word list */
+  /* 아래 규칙은 .list-toolbar 요소의 표시 방식을 정의합니다. */
   .list-toolbar{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:10px;
   }
+  /* 아래 규칙은 .list-toolbar input[type=text] 요소의 표시 방식을 정의합니다. */
   .list-toolbar input[type=text]{
+  /* padding: 요소 내부 여백 */
     padding:8px 12px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* width: 요소의 너비 */
     width:180px;
   }
+  /* 아래 규칙은 .clear-all 요소의 표시 방식을 정의합니다. */
   .clear-all{
+  /* background: 요소의 배경 */
     background:none;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* color: 요소의 글자 색상 */
     color:var(--bad);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* padding: 요소 내부 여백 */
     padding:7px 12px;
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
   }
 
+  /* 아래 규칙은 .group-bar 요소의 표시 방식을 정의합니다. */
   .group-bar{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* padding: 요소 내부 여백 */
     padding:12px 14px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:14px;
   }
+  /* 아래 규칙은 .group-bar-row 요소의 표시 방식을 정의합니다. */
   .group-bar-row{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .group-bar-row label 요소의 표시 방식을 정의합니다. */
   .group-bar-row label{
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
+  /* 아래 규칙은 .group-bar-row input[type=number] 요소의 표시 방식을 정의합니다. */
   .group-bar-row input[type=number]{
+  /* width: 요소의 너비 */
     width:64px;
+  /* padding: 요소 내부 여백 */
     padding:7px 8px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:7px;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
   }
   .group-bar-row span{font-size:13px;color:var(--muted);}
+  /* 아래 규칙은 .group-apply-btn 요소의 표시 방식을 정의합니다. */
   .group-apply-btn{
+  /* background: 요소의 배경 */
     background:var(--ink);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:7px;
+  /* padding: 요소 내부 여백 */
     padding:7px 14px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* margin-left: 해당 CSS 속성 */
     margin-left:auto;
   }
+  /* 아래 규칙은 .group-bar-hint 요소의 표시 방식을 정의합니다. */
   .group-bar-hint{
+  /* font-size: 글자 크기 */
     font-size:12px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin-top: 해당 CSS 속성 */
     margin-top:8px;
+  /* line-height: 줄 간격 */
     line-height:1.5;
   }
 
+  /* 아래 규칙은 .search-test-bar 요소의 표시 방식을 정의합니다. */
   .search-test-bar{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* padding: 요소 내부 여백 */
     padding:10px 14px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:14px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--accent);
   }
+  /* 아래 규칙은 .search-test-btn 요소의 표시 방식을 정의합니다. */
   .search-test-btn{
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:7px;
+  /* padding: 요소 내부 여백 */
     padding:7px 14px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
 
+  /* 아래 규칙은 .group-card 요소의 표시 방식을 정의합니다. */
   .group-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:8px;
+  /* overflow: 넘치는 내용 처리 방식 */
     overflow:hidden;
   }
+  /* 아래 규칙은 .group-card-head 요소의 표시 방식을 정의합니다. */
   .group-card-head{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* padding: 요소 내부 여백 */
     padding:13px 16px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .group-card-title 요소의 표시 방식을 정의합니다. */
   .group-card-title{
+  /* font-size: 글자 크기 */
     font-size:14.5px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
   }
+  /* 아래 규칙은 .group-card-sub 요소의 표시 방식을 정의합니다. */
   .group-card-sub{
+  /* font-size: 글자 크기 */
     font-size:12px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin-top: 해당 CSS 속성 */
     margin-top:2px;
+  /* font-weight: 글자 굵기 */
     font-weight:400;
   }
+  /* 아래 규칙은 .group-card-actions 요소의 표시 방식을 정의합니다. */
   .group-card-actions{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
+  /* 아래 규칙은 .group-test-btn 요소의 표시 방식을 정의합니다. */
   .group-test-btn{
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:7px;
+  /* padding: 요소 내부 여백 */
     padding:7px 13px;
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .group-caret 요소의 표시 방식을 정의합니다. */
   .group-caret{
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* transition: 상태 변화 애니메이션 */
     transition:transform .15s;
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
   }
   .group-card.open .group-caret{transform:rotate(90deg);}
+  /* 아래 규칙은 .group-card-body 요소의 표시 방식을 정의합니다. */
   .group-card-body{
+  /* display: 요소의 화면 표시 방식 */
     display:none;
+  /* padding: 요소 내부 여백 */
     padding:0 16px 14px;
+  /* border-top: 해당 CSS 속성 */
     border-top:1px solid var(--line);
   }
   .group-card.open .group-card-body{display:block;}
+  /* 아래 규칙은 .group-card-body .word-item 요소의 표시 방식을 정의합니다. */
   .group-card-body .word-item{
+  /* box-shadow: 그림자 효과 */
     box-shadow:none;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-bottom: 해당 CSS 속성 */
     border-bottom:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:0;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:0;
+  /* padding: 요소 내부 여백 */
     padding:12px 0;
   }
   .group-card-body .word-item:last-child{border-bottom:none;}
   .group-card.cleared{border-color:var(--good);}
+  /* 아래 규칙은 .group-check 요소의 표시 방식을 정의합니다. */
   .group-check{
+  /* display: 요소의 화면 표시 방식 */
     display:inline-flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* width: 요소의 너비 */
     width:16px;
+  /* height: 요소의 높이 */
     height:16px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:50%;
+  /* background: 요소의 배경 */
     background:var(--good);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* font-size: 글자 크기 */
     font-size:10.5px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* margin-right: 해당 CSS 속성 */
     margin-right:6px;
+  /* vertical-align: 해당 CSS 속성 */
     vertical-align:middle;
   }
+  /* 아래 규칙은 .word-item 요소의 표시 방식을 정의합니다. */
   .word-item{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* padding: 요소 내부 여백 */
     padding:14px 16px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:8px;
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:12px;
   }
+  /* 아래 규칙은 .word-item .w-num 요소의 표시 방식을 정의합니다. */
   .word-item .w-num{
+  /* flex: Flex 항목 크기/성장 방식 */
     flex:none;
+  /* width: 요소의 너비 */
     width:30px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* font-weight: 글자 굵기 */
     font-weight:600;
+  /* padding-top: 해당 CSS 속성 */
     padding-top:2px;
   }
   .word-item .w-main{flex:1;}
   .word-item .w-en{font-weight:700;font-size:15px;}
   .word-item .w-kr{font-size:13.5px;color:var(--ink);margin-top:3px;}
   .word-item .w-etym{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
+  /* 아래 규칙은 .word-item .w-del 요소의 표시 방식을 정의합니다. */
   .word-item .w-del{
+  /* background: 요소의 배경 */
     background:none;border:none;color:var(--muted);cursor:pointer;
+  /* font-size: 글자 크기 */
     font-size:16px;padding:2px 6px;height:fit-content;
   }
   .word-item .w-del:hover{color:var(--bad);}
 
   /* Test panel */
+  /* 아래 규칙은 .test-setup 요소의 표시 방식을 정의합니다. */
   .test-setup{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:14px;
+  /* padding: 요소 내부 여백 */
     padding:22px;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
   }
   .test-setup h2{margin:0 0 6px;font-size:18px;}
   .test-setup p{margin:0 0 18px;font-size:13.5px;color:var(--muted);}
+  /* 아래 규칙은 .count-select 요소의 표시 방식을 정의합니다. */
   .count-select{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .count-select button 요소의 표시 방식을 정의합니다. */
   .count-select button{
+  /* padding: 요소 내부 여백 */
     padding:8px 16px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:999px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* background: 요소의 배경 */
     background:#fff;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .count-select button.sel 요소의 표시 방식을 정의합니다. */
   .count-select button.sel{
+  /* background: 요소의 배경 */
     background:var(--ink);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border-color: 해당 CSS 속성 */
     border-color:var(--ink);
   }
+  /* 아래 규칙은 .start-btn 요소의 표시 방식을 정의합니다. */
   .start-btn{
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border: 요소의 테두리 */
     border:none;
+  /* padding: 요소 내부 여백 */
     padding:12px 30px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* font-size: 글자 크기 */
     font-size:15px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
   }
   .start-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
 
+  /* 아래 규칙은 .range-mode-tabs 요소의 표시 방식을 정의합니다. */
   .range-mode-tabs{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:6px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
   }
+  /* 아래 규칙은 .range-mode-tabs button 요소의 표시 방식을 정의합니다. */
   .range-mode-tabs button{
+  /* padding: 요소 내부 여백 */
     padding:7px 14px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:999px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* background: 요소의 배경 */
     background:#fff;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .range-mode-tabs button.mode-sel 요소의 표시 방식을 정의합니다. */
   .range-mode-tabs button.mode-sel{
+  /* background: 요소의 배경 */
     background:var(--ink);
+  /* color: 요소의 글자 색상 */
     color:#fff;
+  /* border-color: 해당 CSS 속성 */
     border-color:var(--ink);
   }
+  /* 아래 규칙은 .range-inputs 요소의 표시 방식을 정의합니다. */
   .range-inputs{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:10px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:12px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .range-inputs input[type=number] 요소의 표시 방식을 정의합니다. */
   .range-inputs input[type=number]{
+  /* width: 요소의 너비 */
     width:100px;
+  /* padding: 요소 내부 여백 */
     padding:9px 10px;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
   }
   .range-inputs span{color:var(--muted);font-size:14px;}
   .range-inputs .range-max{font-size:12px;color:var(--muted);width:100%;margin-top:2px;}
+  /* 아래 규칙은 .range-order 요소의 표시 방식을 정의합니다. */
   .range-order{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:18px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
   }
   .range-order label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  /* 아래 규칙은 .range-err 요소의 표시 방식을 정의합니다. */
   .range-err{
+  /* color: 요소의 글자 색상 */
     color:var(--bad);
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* margin-top: 해당 CSS 속성 */
     margin-top:10px;
+  /* min-height: 해당 CSS 속성 */
     min-height:16px;
   }
 
+  /* 아래 규칙은 .acc-scope-cards 요소의 표시 방식을 정의합니다. */
   .acc-scope-cards{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* flex-direction: 해당 CSS 속성 */
     flex-direction:column;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:8px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:22px;
+  /* text-align: 텍스트 정렬 */
     text-align:left;
   }
+  /* 아래 규칙은 .acc-scope-card 요소의 표시 방식을 정의합니다. */
   .acc-scope-card{
+  /* display: 요소의 화면 표시 방식 */
     display:block;
+  /* position: 요소의 위치 지정 방식 */
     position:relative;
+  /* border: 요소의 테두리 */
     border:1.5px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:11px;
+  /* padding: 요소 내부 여백 */
     padding:13px 14px;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* transition: 상태 변화 애니메이션 */
     transition:border-color .15s, background .15s;
+  /* user-select: 해당 CSS 속성 */
     user-select:none;
+  /* -webkit-user-select: 해당 CSS 속성 */
     -webkit-user-select:none;
   }
+  /* 아래 규칙은 .acc-scope-card input[type=radio] 요소의 표시 방식을 정의합니다. */
   .acc-scope-card input[type=radio]{
+  /* position: 요소의 위치 지정 방식 */
     position:absolute;
+  /* opacity: 투명도 */
     opacity:0;
+  /* pointer-events: 해당 CSS 속성 */
     pointer-events:none;
+  /* outline: 포커스 외곽선 */
     outline:none;
   }
+  /* 아래 규칙은 .acc-scope-card:has(input:checked) 요소의 표시 방식을 정의합니다. */
   .acc-scope-card:has(input:checked){
+  /* border-color: 해당 CSS 속성 */
     border-color:var(--accent);
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
   }
+  /* 아래 규칙은 .acc-scope-card.checked 요소의 표시 방식을 정의합니다. */
   .acc-scope-card.checked{
+  /* border-color: 해당 CSS 속성 */
     border-color:var(--accent);
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
   }
+  /* 아래 규칙은 .acc-scope-card-title 요소의 표시 방식을 정의합니다. */
   .acc-scope-card-title{
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* color: 요소의 글자 색상 */
     color:var(--ink);
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:2px;
   }
+  /* 아래 규칙은 .acc-scope-card-sub 요소의 표시 방식을 정의합니다. */
   .acc-scope-card-sub{
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* gap: Flex/Grid 자식 사이 간격 */
     gap:6px;
+  /* flex-wrap: 해당 CSS 속성 */
     flex-wrap:wrap;
   }
+  /* 아래 규칙은 .stepper 요소의 표시 방식을 정의합니다. */
   .stepper{
+  /* display: 요소의 화면 표시 방식 */
     display:inline-flex;
+  /* align-items: 교차축 정렬 */
     align-items:center;
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* overflow: 넘치는 내용 처리 방식 */
     overflow:hidden;
+  /* background: 요소의 배경 */
     background:#fff;
   }
+  /* 아래 규칙은 .stepper-btn 요소의 표시 방식을 정의합니다. */
   .stepper-btn{
+  /* appearance: 브라우저 기본 UI 외형 제거/설정 */
     appearance:none;
+  /* border: 요소의 테두리 */
     border:none;
+  /* background: 요소의 배경 */
     background:none;
+  /* width: 요소의 너비 */
     width:26px;
+  /* height: 요소의 높이 */
     height:26px;
+  /* font-size: 글자 크기 */
     font-size:15px;
+  /* line-height: 줄 간격 */
     line-height:1;
+  /* color: 요소의 글자 색상 */
     color:var(--ink);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* user-select: 해당 CSS 속성 */
     user-select:none;
+  /* -webkit-user-select: 해당 CSS 속성 */
     -webkit-user-select:none;
   }
   .stepper-btn:active{background:var(--line);}
+  /* 아래 규칙은 .stepper input[type=number] 요소의 표시 방식을 정의합니다. */
   .stepper input[type=number]{
+  /* width: 요소의 너비 */
     width:32px;
+  /* border: 요소의 테두리 */
     border:none;
+  /* border-left: 해당 CSS 속성 */
     border-left:1px solid var(--line);
+  /* border-right: 해당 CSS 속성 */
     border-right:1px solid var(--line);
+  /* text-align: 텍스트 정렬 */
     text-align:center;
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* padding: 요소 내부 여백 */
     padding:5px 0;
+  /* -moz-appearance: 해당 CSS 속성 */
     -moz-appearance:textfield;
     outline:none; /* 기본 파란 포커스 링 제거 - 카드 강조색과 겹쳐 산만해 보이는 것을 방지 */
+  /* background: 요소의 배경 */
     background:transparent;
   }
+  /* 아래 규칙은 .stepper input[type=number]:focus 요소의 표시 방식을 정의합니다. */
   .stepper input[type=number]:focus{
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
   }
+  /* 아래 규칙은 .stepper-btn:focus 요소의 표시 방식을 정의합니다. */
   .stepper-btn:focus{
+  /* outline: 포커스 외곽선 */
     outline:none;
   }
   .stepper input[type=number]::-webkit-outer-spin-button,
+  /* 아래 규칙은 .stepper input[type=number]::-webkit-inner-spin-button 요소의 표시 방식을 정의합니다. */
   .stepper input[type=number]::-webkit-inner-spin-button{
+  /* -webkit-appearance: 해당 CSS 속성 */
     -webkit-appearance:none;
+  /* margin: 요소 외부 여백 */
     margin:0;
   }
 
+  /* 아래 규칙은 .acc-threshold-block 요소의 표시 방식을 정의합니다. */
   .acc-threshold-block{
+  /* text-align: 텍스트 정렬 */
     text-align:left;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:8px;
   }
+  /* 아래 규칙은 .acc-threshold-label 요소의 표시 방식을 정의합니다. */
   .acc-threshold-label{
+  /* font-size: 글자 크기 */
     font-size:13.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--ink);
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:12px;
   }
+  /* 아래 규칙은 .acc-threshold-label b 요소의 표시 방식을 정의합니다. */
   .acc-threshold-label b{
+  /* color: 요소의 글자 색상 */
     color:var(--accent);
+  /* font-size: 글자 크기 */
     font-size:16px;
   }
+  /* 아래 규칙은 .acc-slider 요소의 표시 방식을 정의합니다. */
   .acc-slider{
+  /* width: 요소의 너비 */
     width:100%;
+  /* appearance: 브라우저 기본 UI 외형 제거/설정 */
     appearance:none;
+  /* -webkit-appearance: 해당 CSS 속성 */
     -webkit-appearance:none;
+  /* height: 요소의 높이 */
     height:5px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:999px;
+  /* background: 요소의 배경 */
     background:var(--line);
+  /* outline: 포커스 외곽선 */
     outline:none;
+  /* margin: 요소 외부 여백 */
     margin:0;
   }
+  /* 아래 규칙은 .acc-slider::-webkit-slider-thumb 요소의 표시 방식을 정의합니다. */
   .acc-slider::-webkit-slider-thumb{
+  /* appearance: 브라우저 기본 UI 외형 제거/설정 */
     appearance:none;
+  /* -webkit-appearance: 해당 CSS 속성 */
     -webkit-appearance:none;
+  /* width: 요소의 너비 */
     width:20px;
+  /* height: 요소의 높이 */
     height:20px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:50%;
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* border: 요소의 테두리 */
     border:3px solid #fff;
+  /* box-shadow: 그림자 효과 */
     box-shadow:0 1px 4px rgba(0,0,0,0.25);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .acc-slider::-moz-range-thumb 요소의 표시 방식을 정의합니다. */
   .acc-slider::-moz-range-thumb{
+  /* width: 요소의 너비 */
     width:20px;
+  /* height: 요소의 높이 */
     height:20px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:50%;
+  /* background: 요소의 배경 */
     background:var(--accent);
+  /* border: 요소의 테두리 */
     border:3px solid #fff;
+  /* box-shadow: 그림자 효과 */
     box-shadow:0 1px 4px rgba(0,0,0,0.25);
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
   }
+  /* 아래 규칙은 .acc-slider-scale 요소의 표시 방식을 정의합니다. */
   .acc-slider-scale{
+  /* display: 요소의 화면 표시 방식 */
     display:flex;
+  /* justify-content: 주축 정렬 */
     justify-content:space-between;
+  /* font-size: 글자 크기 */
     font-size:11px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin-top: 해당 CSS 속성 */
     margin-top:6px;
     padding:0 10px; /* 슬라이더 손잡이(20px) 반지름만큼 여백을 줘서 0%/100% 라벨이 실제 손잡이 이동 범위와 맞도록 함 */
   }
+  /* 아래 규칙은 .acc-hint 요소의 표시 방식을 정의합니다. */
   .acc-hint{
+  /* font-size: 글자 크기 */
     font-size:12px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin: 요소 외부 여백 */
     margin:16px 0 4px;
+  /* line-height: 줄 간격 */
     line-height:1.5;
+  /* text-align: 텍스트 정렬 */
     text-align:left;
   }
 
+  /* 아래 규칙은 .quiz-card 요소의 표시 방식을 정의합니다. */
   .quiz-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:16px;
+  /* padding: 요소 내부 여백 */
     padding:36px 26px;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
   }
+  /* 아래 규칙은 .quiz-progress 요소의 표시 방식을 정의합니다. */
   .quiz-progress{
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:18px;
+  /* letter-spacing: 해당 CSS 속성 */
     letter-spacing:.02em;
   }
+  /* 아래 규칙은 .quiz-word 요소의 표시 방식을 정의합니다. */
   .quiz-word{
+  /* font-family: 글꼴 */
     font-family: Georgia, 'Noto Serif KR', serif;
+  /* font-size: 글자 크기 */
     font-size:34px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:26px;
+  /* word-break: 해당 CSS 속성 */
     word-break:break-word;
   }
+  /* 아래 규칙은 .quiz-input 요소의 표시 방식을 정의합니다. */
   .quiz-input{
+  /* width: 요소의 너비 */
     width:100%;
+  /* max-width: 해당 CSS 속성 */
     max-width:340px;
+  /* padding: 요소 내부 여백 */
     padding:12px 14px;
+  /* font-size: 글자 크기 */
     font-size:16px;
+  /* border: 요소의 테두리 */
     border:1.5px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:10px;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:14px;
   }
   .quiz-input:focus{outline:none;border-color:var(--accent);}
   .quiz-input.correct{border-color:var(--good);background:var(--good-soft);}
   .quiz-input.wrong{border-color:var(--bad);background:var(--bad-soft);}
 
+  /* 아래 규칙은 .quiz-feedback 요소의 표시 방식을 정의합니다. */
   .quiz-feedback{
+  /* min-height: 해당 CSS 속성 */
     min-height:24px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:16px;
   }
   .quiz-feedback.correct{color:var(--good);font-weight:700;}
   .quiz-feedback.wrong{color:var(--bad);}
   .quiz-feedback .answer-reveal{color:var(--ink);font-weight:700;}
+  /* 아래 규칙은 .feedback-etym 요소의 표시 방식을 정의합니다. */
   .feedback-etym{
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* font-weight: 글자 굵기 */
     font-weight:400;
+  /* font-size: 글자 크기 */
     font-size:12.5px;
+  /* margin-top: 해당 CSS 속성 */
     margin-top:8px;
+  /* line-height: 줄 간격 */
     line-height:1.5;
+  /* text-align: 텍스트 정렬 */
     text-align:left;
+  /* background: 요소의 배경 */
     background:var(--accent-soft);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* padding: 요소 내부 여백 */
     padding:9px 12px;
   }
 
   .quiz-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  /* 아래 규칙은 .quiz-btns button 요소의 표시 방식을 정의합니다. */
   .quiz-btns button{
+  /* padding: 요소 내부 여백 */
     padding:10px 22px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:9px;
+  /* font-size: 글자 크기 */
     font-size:14px;
+  /* font-family: 글꼴 */
     font-family:inherit;
+  /* cursor: 마우스 커서 모양 */
     cursor:pointer;
+  /* border: 요소의 테두리 */
     border:none;
   }
   .btn-primary{background:var(--ink);color:#fff;}
   .btn-ghost{background:none;border:1px solid var(--line) !important;color:var(--muted);}
   .btn-danger{background:var(--bad);color:#fff;}
 
+  /* 아래 규칙은 .result-card 요소의 표시 방식을 정의합니다. */
   .result-card{
+  /* background: 요소의 배경 */
     background:var(--card);
+  /* border: 요소의 테두리 */
     border:1px solid var(--line);
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:16px;
+  /* padding: 요소 내부 여백 */
     padding:34px 26px;
+  /* text-align: 텍스트 정렬 */
     text-align:center;
   }
+  /* 아래 규칙은 .result-score 요소의 표시 방식을 정의합니다. */
   .result-score{
+  /* font-family: 글꼴 */
     font-family:Georgia,'Noto Serif KR',serif;
+  /* font-size: 글자 크기 */
     font-size:48px;
+  /* font-weight: 글자 굵기 */
     font-weight:700;
+  /* margin-bottom: 해당 CSS 속성 */
     margin-bottom:4px;
   }
   .result-score span{font-size:22px;color:var(--muted);font-weight:400;}
   .result-label{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
+  /* 아래 규칙은 .group-cleared-note 요소의 표시 방식을 정의합니다. */
   .group-cleared-note{
+  /* background: 요소의 배경 */
     background:var(--good-soft);
+  /* color: 요소의 글자 색상 */
     color:var(--good);
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* padding: 요소 내부 여백 */
     padding:9px 12px;
+  /* margin: 요소 외부 여백 */
     margin:-10px 0 20px;
   }
+  /* 아래 규칙은 .group-uncleared-note 요소의 표시 방식을 정의합니다. */
   .group-uncleared-note{
+  /* background: 요소의 배경 */
     background:var(--bad-soft);
+  /* color: 요소의 글자 색상 */
     color:var(--bad);
+  /* font-size: 글자 크기 */
     font-size:13px;
+  /* border-radius: 요소 모서리 둥글기 */
     border-radius:8px;
+  /* padding: 요소 내부 여백 */
     padding:9px 12px;
+  /* margin: 요소 외부 여백 */
     margin:-10px 0 20px;
   }
   .wrong-list{text-align:left;margin-top:18px;}
   .wrong-list h3{font-size:13.5px;color:var(--muted);margin-bottom:10px;font-weight:600;}
+  /* 아래 규칙은 .wrong-item 요소의 표시 방식을 정의합니다. */
   .wrong-item{
+  /* border-top: 해당 CSS 속성 */
     border-top:1px solid var(--line);
+  /* padding: 요소 내부 여백 */
     padding:10px 0;
+  /* font-size: 글자 크기 */
     font-size:13.5px;
   }
   .wrong-item .we{font-weight:700;}
@@ -944,26 +1673,40 @@
   .wrong-item .wyours{color:var(--bad);margin-top:2px;}
   .wrong-item .wetym{color:var(--muted);font-size:12px;margin-top:6px;line-height:1.5;}
 
+  /* 아래 규칙은 .empty-state 요소의 표시 방식을 정의합니다. */
   .empty-state{
+  /* text-align: 텍스트 정렬 */
     text-align:center;
+  /* padding: 요소 내부 여백 */
     padding:40px 20px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* font-size: 글자 크기 */
     font-size:13.5px;
   }
 
+  /* 아래 규칙은 footer.credit 요소의 표시 방식을 정의합니다. */
   footer.credit{
+  /* margin-top: 해당 CSS 속성 */
     margin-top:36px;
+  /* padding-top: 해당 CSS 속성 */
     padding-top:16px;
+  /* border-top: 해당 CSS 속성 */
     border-top:1px solid var(--line);
+  /* font-size: 글자 크기 */
     font-size:11.5px;
+  /* color: 요소의 글자 색상 */
     color:var(--muted);
+  /* line-height: 줄 간격 */
     line-height:1.7;
   }
+  /* ===== CSS: 전체 UI 스타일 정의 끝 ===== */
 </style>
 </head>
 <body>
 <div class="wrap">
 
+  <!-- 상단 브랜드와 통계/설치 관련 UI 영역입니다. -->
   <header class="top">
     <div class="brand"><span id="brandTitle">단어 테스트장</span> <small>Vocabulary Bench</small></div>
     <div class="stat-row" id="statRow">
@@ -975,6 +1718,7 @@
   </header>
 
   <!-- ===== 단어장 홈 (덱 선택 화면) ===== -->
+  <!-- 단어장 목록을 선택하고 새 단어장을 만드는 홈 화면입니다. -->
   <section class="panel active" id="panel-deckhome">
     <div class="deck-intro">
       <p>단어장을 선택하거나 새로 만들어보세요. 각 단어장은 단어·그룹·완료 기록이 서로 독립적으로 관리됩니다.</p>
@@ -989,6 +1733,7 @@
   </section>
 
   <!-- ===== 단어장 내부 (기존 앱 화면) ===== -->
+  <!-- 선택한 단어장 내부에서 단어 관리와 테스트를 수행하는 화면입니다. -->
   <section class="panel" id="panel-deckapp">
 
     <div class="deck-app-header">
@@ -996,6 +1741,7 @@
       <div class="deck-app-title" id="deckAppTitle"></div>
     </div>
 
+  <!-- 단어 관리/테스트 화면을 전환하는 탭 네비게이션입니다. -->
     <nav class="tabs">
       <button data-tab="manage" class="active">단어 관리</button>
       <button data-tab="test">테스트</button>
@@ -1125,6 +1871,7 @@
     </section>
   </section>
 
+  <!-- 데이터 저장 방식과 출처 관련 안내를 표시하는 하단 영역입니다. -->
   <footer class="credit">
     데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
     저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
@@ -1132,6 +1879,7 @@
 </div>
 
 <!-- ===== 이름변경 모달 ===== -->
+<!-- 모달 배경: 이름 변경 또는 삭제 확인 창을 표시할 때 사용합니다. -->
 <div class="modal-overlay" id="renameModalOverlay" style="display:none;">
   <div class="modal-card">
     <h3>단어장 이름 변경</h3>
@@ -1144,6 +1892,7 @@
 </div>
 
 <!-- ===== 삭제 확인 모달 ===== -->
+<!-- 모달 배경: 이름 변경 또는 삭제 확인 창을 표시할 때 사용합니다. -->
 <div class="modal-overlay" id="deleteModalOverlay" style="display:none;">
   <div class="modal-card">
     <h3>단어장 삭제</h3>
@@ -1156,72 +1905,104 @@
 </div>
 
 <script>
+/* ===== JavaScript: 단어장 앱의 동작 로직 시작 ===== */
 /* =====================================================================
    Deck (단어장) system
    여러 개의 독립된 단어장을 만들고 전환할 수 있게 한다.
    각 단어장의 단어/그룹설정/완료기록/정답률은 덱 ID별로 완전히 분리 저장된다.
    ===================================================================== */
 const DECKS_KEY = 'vocabBench.decks.v1';
+  // 상수 CURRENT_DECK_KEY을(를) 선언합니다.
 const CURRENT_DECK_KEY = 'vocabBench.currentDeck.v1';
 
+// localStorage에서 전체 단어장 목록을 읽어 배열로 반환합니다.
 function loadDecks(){
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 raw을(를) 선언합니다.
     const raw = localStorage.getItem(DECKS_KEY);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(raw) return JSON.parse(raw);
   }catch(e){}
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return [];
 }
+// 현재 단어장 목록을 localStorage에 JSON으로 저장합니다.
 function saveDecks(decks){
   localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
 }
+// 각 단어장을 구분하기 위한 고유 ID를 생성합니다.
 function makeDeckId(){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 }
+// 마지막으로 선택한 단어장의 ID를 localStorage에서 가져옵니다.
 function getCurrentDeckId(){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return localStorage.getItem(CURRENT_DECK_KEY);
 }
+// 현재 단어장 ID를 localStorage에 저장하거나 제거합니다.
 function setCurrentDeckId(id){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(id) localStorage.setItem(CURRENT_DECK_KEY, id);
   else localStorage.removeItem(CURRENT_DECK_KEY);
 }
 
+  // 실행 중 변경될 수 있는 상태 변수 DECKS을(를) 초기화합니다.
 let DECKS = loadDecks();
+  // 실행 중 변경될 수 있는 상태 변수 CURRENT_DECK_ID을(를) 초기화합니다.
 let CURRENT_DECK_ID = null;
 
 // 이전 버전(단어장 개념이 없던 시절) 사용자를 위한 1회성 마이그레이션:
 // 예전 방식으로 저장돼 있던 단어/설정이 있으면 "기본 단어장"으로 자동 변환한다.
 (function migrateLegacyDataIfNeeded(){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(DECKS.length > 0) return; // 이미 단어장이 있으면 마이그레이션 불필요
+  // 상수 legacyWordsRaw을(를) 선언합니다.
   const legacyWordsRaw = localStorage.getItem('vocabBench.words.v1');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!legacyWordsRaw) return;
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 legacyWords을(를) 선언합니다.
     const legacyWords = JSON.parse(legacyWordsRaw);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(!Array.isArray(legacyWords) || legacyWords.length===0) return;
 
+  // 상수 id을(를) 선언합니다.
     const id = makeDeckId();
     DECKS = [{ id, name: '기본 단어장', createdAt: Date.now() }];
     saveDecks(DECKS);
 
     localStorage.setItem(deckScopedKey('vocabBench.words.v1', id), legacyWordsRaw);
     ['vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
+  // 상수 v을(를) 선언합니다.
       const v = localStorage.getItem(k);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(v!==null) localStorage.setItem(deckScopedKey(k, id), v);
     });
   }catch(e){}
 })();
 
+// 기본 저장 키에 단어장 ID를 붙여 단어장별 독립 저장 키를 만듭니다.
 function deckScopedKey(baseKey, deckId){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return baseKey + '.deck.' + deckId;
 }
 
+// 단어장 홈 화면에 현재 존재하는 모든 단어장을 렌더링하고 버튼 이벤트를 연결합니다.
 function renderDeckList(){
+  // 상수 el을(를) 선언합니다.
   const el = document.getElementById('deckList');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(DECKS.length===0){
     el.innerHTML = '<div class="deck-empty">아직 단어장이 없습니다.<br>위에서 이름을 입력하고 새 단어장을 만들어보세요.</div>';
     return;
   }
   el.innerHTML = DECKS.map(d=>{
+  // 상수 wordCount을(를) 선언합니다.
     const wordCount = countWordsInDeck(d.id);
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
     return `<div class="deck-card" data-deck="${d.id}">
       <div class="deck-card-main">
         <div class="deck-card-name">${escapeHtml(d.name)}</div>
@@ -1236,6 +2017,7 @@ function renderDeckList(){
 
   el.querySelectorAll('.deck-card').forEach(card=>{
     card.addEventListener('click', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(e.target.closest('button')) return;
       openDeck(card.dataset.deck);
     });
@@ -1243,7 +2025,9 @@ function renderDeckList(){
   el.querySelectorAll('[data-rename]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
+  // 상수 id을(를) 선언합니다.
       const id = btn.dataset.rename;
+  // 상수 deck을(를) 선언합니다.
       const deck = DECKS.find(d=>d.id===id);
       openRenameModal(deck);
     });
@@ -1251,7 +2035,9 @@ function renderDeckList(){
   el.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
+  // 상수 id을(를) 선언합니다.
       const id = btn.dataset.delete;
+  // 상수 deck을(를) 선언합니다.
       const deck = DECKS.find(d=>d.id===id);
       openDeleteModal(deck);
     });
@@ -1259,25 +2045,34 @@ function renderDeckList(){
 }
 
 /* ---------- Rename modal ---------- */
+// 단어장 이름 변경 모달을 열고 확인/취소/키보드 이벤트를 연결합니다.
 function openRenameModal(deck){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!deck) return;
+  // 상수 overlay을(를) 선언합니다.
   const overlay = document.getElementById('renameModalOverlay');
+  // 상수 input을(를) 선언합니다.
   const input = document.getElementById('renameModalInput');
   input.value = deck.name;
   overlay.style.display = 'flex';
   setTimeout(()=>{ input.focus(); input.select(); }, 30);
 
+  // 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
   function close(){
     overlay.style.display = 'none';
     document.getElementById('renameModalConfirm').removeEventListener('click', onConfirm);
     input.removeEventListener('keydown', onKeydown);
   }
+  // 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
   function onConfirm(){
+  // 상수 newName을(를) 선언합니다.
     const newName = input.value.trim();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(newName){
       deck.name = newName.slice(0,40);
       saveDecks(DECKS);
       renderDeckList();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(CURRENT_DECK_ID === deck.id){
         document.getElementById('deckAppTitle').textContent = deck.name;
         document.getElementById('brandTitle').textContent = deck.name;
@@ -1285,10 +2080,14 @@ function openRenameModal(deck){
     }
     close();
   }
+  // 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
   function onKeydown(e){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(e.key==='Enter') onConfirm();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(e.key==='Escape') close();
   }
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('renameModalConfirm').addEventListener('click', onConfirm);
   document.getElementById('renameModalCancel').onclick = close;
   overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
@@ -1296,17 +2095,22 @@ function openRenameModal(deck){
 }
 
 /* ---------- Delete modal ---------- */
+// 단어장 삭제 확인 모달을 열고 삭제 시 해당 단어장의 저장 데이터를 제거합니다.
 function openDeleteModal(deck){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!deck) return;
+  // 상수 overlay을(를) 선언합니다.
   const overlay = document.getElementById('deleteModalOverlay');
   document.getElementById('deleteModalText').textContent =
     `"${deck.name}" 단어장을 삭제할까요?\n단어, 그룹 설정, 완료 기록이 모두 함께 삭제되며 되돌릴 수 없습니다.`;
   overlay.style.display = 'flex';
 
+  // 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
   function close(){
     overlay.style.display = 'none';
     document.getElementById('deleteModalConfirm').removeEventListener('click', onConfirm);
   }
+  // 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
   function onConfirm(){
     ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2','vocabBench.wordStats.v1'].forEach(k=>{
       localStorage.removeItem(deckScopedKey(k, deck.id));
@@ -1316,45 +2120,62 @@ function openDeleteModal(deck){
     renderDeckList();
     close();
   }
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('deleteModalConfirm').addEventListener('click', onConfirm);
   document.getElementById('deleteModalCancel').onclick = close;
   overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
 }
 
+// 특정 단어장에 저장된 단어 수를 계산합니다.
 function countWordsInDeck(deckId){
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 raw을(를) 선언합니다.
     const raw = localStorage.getItem(deckScopedKey('vocabBench.words.v1', deckId));
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(!raw) return 0;
+  // 상수 arr을(를) 선언합니다.
     const arr = JSON.parse(raw);
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
     return Array.isArray(arr) ? arr.length : 0;
   }catch(e){ return 0; }
 }
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('createDeckBtn').addEventListener('click', ()=>{
+  // 상수 input을(를) 선언합니다.
   const input = document.getElementById('newDeckName');
+  // 상수 name을(를) 선언합니다.
   const name = input.value.trim();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!name){
     alert('단어장 이름을 입력해주세요.');
     return;
   }
+  // 상수 id을(를) 선언합니다.
   const id = makeDeckId();
   DECKS.push({ id, name: name.slice(0,40), createdAt: Date.now() });
   saveDecks(DECKS);
   input.value = '';
   renderDeckList();
 });
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('newDeckName').addEventListener('keydown', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(e.key==='Enter') document.getElementById('createDeckBtn').click();
 });
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('backToHomeBtn').addEventListener('click', ()=>{
   closeDeck();
 });
 
+// 선택한 단어장을 열고 해당 단어장의 화면과 데이터를 초기화합니다.
 function openDeck(deckId, opts){
   opts = opts || {};
   CURRENT_DECK_ID = deckId;
   setCurrentDeckId(deckId);
+  // 상수 deck을(를) 선언합니다.
   const deck = DECKS.find(d=>d.id===deckId);
   document.getElementById('deckAppTitle').textContent = deck ? deck.name : '';
   document.getElementById('brandTitle').textContent = deck ? deck.name : '단어 테스트장';
@@ -1374,11 +2195,13 @@ function openDeck(deckId, opts){
 
   // 안드로이드 기기 뒤로가기 버튼 대응: 단어장에 들어올 때 히스토리를 하나 쌓아둬서,
   // 뒤로가기를 누르면 앱이 바로 꺼지지 않고 단어장 목록(홈)으로 나가지도록 한다.
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!opts.skipHistoryPush){
     history.pushState({ vocabBenchView: 'deckapp' }, '');
   }
 }
 
+// 현재 단어장을 닫고 단어장 홈 화면으로 돌아갑니다.
 function closeDeck(opts){
   opts = opts || {};
   CURRENT_DECK_ID = null;
@@ -1391,13 +2214,16 @@ function closeDeck(opts){
 
   // 뒤로가기 이벤트로 인해 호출된 경우가 아니면(= 화면의 버튼을 직접 눌러서 나온 경우),
   // 아까 쌓아둔 히스토리 항목을 소비해서 이후 뒤로가기 동작이 꼬이지 않게 한다.
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!opts.fromPopState && history.state && history.state.vocabBenchView === 'deckapp'){
     history.back();
   }
 }
 
 // 안드로이드 뒤로가기(또는 브라우저 뒤로가기) 대응
+  // 브라우저 전역 이벤트를 감시해 앱 상태 변화에 대응합니다.
 window.addEventListener('popstate', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(CURRENT_DECK_ID){
     // 단어장 안에 있다가 뒤로가기 -> 홈 화면으로
     closeDeck({ fromPopState: true });
@@ -1406,28 +2232,40 @@ window.addEventListener('popstate', (e)=>{
 });
 
 /* ---------- Storage (현재 열린 단어장 기준으로 동적 키 사용) ---------- */
+// 현재 단어장의 단어 저장에 사용하는 localStorage 키를 반환합니다.
 function STORE_KEY(){ return deckScopedKey('vocabBench.words.v1', CURRENT_DECK_ID); }
+// 현재 단어장의 최근 정답률 저장 키를 반환합니다.
 function HIST_KEY(){ return deckScopedKey('vocabBench.lastAccuracy.v1', CURRENT_DECK_ID); }
 
+// 현재 단어장의 단어 배열을 localStorage에서 불러옵니다.
 function loadWords(){
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 raw을(를) 선언합니다.
     const raw = localStorage.getItem(STORE_KEY());
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(raw) return JSON.parse(raw);
   }catch(e){}
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return null;
 }
+// 현재 단어장의 단어 배열을 localStorage에 저장하고 통계를 갱신합니다.
 function saveWords(words){
   localStorage.setItem(STORE_KEY(), JSON.stringify(words));
   renderStats();
 }
+// 최근 테스트 정답률을 현재 단어장에 저장합니다.
 function saveAccuracy(pct){
   localStorage.setItem(HIST_KEY(), String(pct));
   renderStats();
 }
 
+  // 실행 중 변경될 수 있는 상태 변수 WORDS을(를) 초기화합니다.
 let WORDS = [];
+  // 실행 중 변경될 수 있는 상태 변수 IS_FIRST_RUN을(를) 초기화합니다.
 let IS_FIRST_RUN = false;
 
+// 현재 단어장에 저장된 단어와 그룹 설정을 불러오고 최초 진입 시 기본 엑셀을 시도합니다.
 function loadDeckData(){
   WORDS = loadWords() || [];
   IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
@@ -1435,15 +2273,21 @@ function loadDeckData(){
   openGroups.clear();
 
   // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(IS_FIRST_RUN){
     fetch('./words.xlsx')
       .then(res=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
         if(!res.ok) throw new Error('words.xlsx not found');
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
         return res.arrayBuffer();
       })
       .then(buf=>{
+  // 상수 wb을(를) 선언합니다.
         const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+  // 상수 { added }을(를) 선언합니다.
         const { added } = parseWordsFromWorkbook(wb, WORDS);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
         if(added.length===0) return;
         WORDS.push(...added);
         saveWords(WORDS);
@@ -1462,30 +2306,42 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(btn.dataset.tab==='test') resetTestSetup();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
   });
 });
 
 /* ---------- Stats ---------- */
+// 상단 통계 영역에 총 단어 수와 최근 정답률을 표시합니다.
 function renderStats(){
   document.getElementById('statTotal').textContent = WORDS.length;
+  // 상수 acc을(를) 선언합니다.
   const acc = localStorage.getItem(HIST_KEY());
   document.getElementById('statAcc').textContent = acc ? acc+'%' : '-';
 }
 
 /* ---------- Group size setting ---------- */
+// 현재 단어장의 그룹 크기 저장 키를 반환합니다.
 function GROUP_KEY(){ return deckScopedKey('vocabBench.groupSize.v1', CURRENT_DECK_ID); }
+// 현재 단어장의 저장된 그룹 크기를 읽고 유효하지 않으면 10을 사용합니다.
 function loadGroupSize(){
+  // 상수 v을(를) 선언합니다.
   const v = parseInt(localStorage.getItem(GROUP_KEY()) || '10', 10);
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return (v && v>0) ? v : 10;
 }
+// 현재 단어장의 그룹 크기를 localStorage에 저장합니다.
 function saveGroupSize(n){
   localStorage.setItem(GROUP_KEY(), String(n));
 }
+  // 실행 중 변경될 수 있는 상태 변수 GROUP_SIZE을(를) 초기화합니다.
 let GROUP_SIZE = 10;
 
+// 전체 단어 배열을 지정된 크기의 연속된 그룹으로 나눕니다.
 function buildGroups(size){
+  // 상수 groups을(를) 선언합니다.
   const groups = [];
   for(let i=0;i<WORDS.length;i+=size){
     groups.push({
@@ -1494,19 +2350,29 @@ function buildGroups(size){
       items: WORDS.slice(i, i+size),
     });
   }
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return groups;
 }
 
 /* ---------- Word list render ---------- */
+  // 상수 openGroups을(를) 선언합니다.
 const openGroups = new Set();
+// 검색 조건에 따라 단어 목록과 그룹 목록을 화면에 렌더링합니다.
 function renderWordList(filter){
+  // 상수 listEl을(를) 선언합니다.
   const listEl = document.getElementById('wordList');
+  // 상수 groupListEl을(를) 선언합니다.
   const groupListEl = document.getElementById('groupList');
+  // 상수 groupBarEl을(를) 선언합니다.
   const groupBarEl = document.getElementById('groupBar');
+  // 상수 searchTestBar을(를) 선언합니다.
   const searchTestBar = document.getElementById('searchTestBar');
+  // 상수 f을(를) 선언합니다.
   const f = (filter||'').trim().toLowerCase();
+  // 상수 isSearching을(를) 선언합니다.
   const isSearching = f.length>0;
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(WORDS.length===0){
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
@@ -1515,12 +2381,15 @@ function renderWordList(filter){
     return;
   }
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(isSearching){
     // 검색 중: 그룹 뷰 숨기고 평면 리스트 + "이 결과로 시험보기" 바 표시
     groupBarEl.style.display = 'none';
     groupListEl.innerHTML = '';
+  // 상수 filtered을(를) 선언합니다.
     const filtered = WORDS.filter(w=> w.word.toLowerCase().includes(f) || w.meaning.toLowerCase().includes(f));
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(filtered.length===0){
       searchTestBar.style.display = 'none';
       listEl.innerHTML = '<div class="empty-state">검색 결과가 없습니다.</div>';
@@ -1545,11 +2414,15 @@ function renderWordList(filter){
   groupBarEl.style.display = 'block';
   document.getElementById('groupSize').value = GROUP_SIZE;
 
+  // 상수 groups을(를) 선언합니다.
   const groups = buildGroups(GROUP_SIZE);
+  // 상수 hint을(를) 선언합니다.
   const hint = document.getElementById('groupHint');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(groups.length<=1){
     hint.textContent = `총 ${WORDS.length}개 단어가 1개 그룹으로 묶여 있습니다.`;
   }else{
+  // 상수 lastSize을(를) 선언합니다.
     const lastSize = groups[groups.length-1].items.length;
     hint.textContent = lastSize===GROUP_SIZE
       ? `총 ${WORDS.length}개 단어를 ${GROUP_SIZE}개씩 ${groups.length}개 그룹으로 나눴습니다.`
@@ -1557,11 +2430,17 @@ function renderWordList(filter){
   }
 
   groupListEl.innerHTML = groups.map((g, gi)=>{
+  // 상수 openAttr을(를) 선언합니다.
     const openAttr = openGroups.has(gi) ? ' open' : '';
+  // 상수 gKey을(를) 선언합니다.
     const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
+  // 상수 cleared을(를) 선언합니다.
     const cleared = isGroupCleared(gKey);
+  // 상수 clearedBadge을(를) 선언합니다.
     const clearedBadge = cleared ? `<span class="group-check" title="완료">✓</span>` : '';
+  // 상수 clearedClass을(를) 선언합니다.
     const clearedClass = cleared ? ' cleared' : '';
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
     return `<div class="group-card${openAttr}${clearedClass}" data-gi="${gi}">
       <div class="group-card-head" data-toggle="${gi}">
         <div>
@@ -1580,13 +2459,20 @@ function renderWordList(filter){
   // 그룹 펼치기/접기
   groupListEl.querySelectorAll('[data-toggle]').forEach(head=>{
     head.addEventListener('click', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(e.target.closest('.group-test-btn')) return;
+  // 상수 gi을(를) 선언합니다.
       const gi = parseInt(head.dataset.toggle, 10);
+  // 상수 card을(를) 선언합니다.
       const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+  // 상수 isOpen을(를) 선언합니다.
       const isOpen = card.classList.toggle('open');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(isOpen){
         openGroups.add(gi);
+  // 상수 body을(를) 선언합니다.
         const body = card.querySelector('.group-card-body');
+  // 상수 g을(를) 선언합니다.
         const g = groups[gi];
         body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
         bindWordDelButtons(body, ()=> renderWordList(''));
@@ -1598,10 +2484,15 @@ function renderWordList(filter){
 
   // 이미 열려있던 그룹은 내용 채우기
   openGroups.forEach(gi=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(gi>=groups.length) return;
+  // 상수 card을(를) 선언합니다.
     const card = groupListEl.querySelector(`.group-card[data-gi="${gi}"]`);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(!card) return;
+  // 상수 body을(를) 선언합니다.
     const body = card.querySelector('.group-card-body');
+  // 상수 g을(를) 선언합니다.
     const g = groups[gi];
     body.innerHTML = g.items.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
     bindWordDelButtons(body, ()=> renderWordList(''));
@@ -1611,8 +2502,11 @@ function renderWordList(filter){
   groupListEl.querySelectorAll('[data-testgroup]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
+  // 상수 gi을(를) 선언합니다.
       const gi = parseInt(btn.dataset.testgroup, 10);
+  // 상수 g을(를) 선언합니다.
       const g = groups[gi];
+  // 상수 gKey을(를) 선언합니다.
       const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
       document.querySelector('nav.tabs button[data-tab="test"]').click();
       startQuiz(shuffle(g.items), gKey);
@@ -1620,7 +2514,9 @@ function renderWordList(filter){
   });
 }
 
+// 단어 하나를 목록에 표시하기 위한 HTML을 생성합니다.
 function renderWordItemHtml(w, realIdx){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return `<div class="word-item">
     <div class="w-num">${realIdx+1}</div>
     <div class="w-main">
@@ -1632,10 +2528,12 @@ function renderWordItemHtml(w, realIdx){
   </div>`;
 }
 
+// 단어 삭제 버튼에 삭제 이벤트를 연결합니다.
 function bindWordDelButtons(container, onDeleted){
   container.querySelectorAll('.w-del').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
+  // 상수 idx을(를) 선언합니다.
       const idx = parseInt(btn.dataset.idx,10);
       WORDS.splice(idx,1);
       saveWords(WORDS);
@@ -1644,16 +2542,22 @@ function bindWordDelButtons(container, onDeleted){
   });
 }
 
+// 사용자 데이터가 HTML 코드로 해석되지 않도록 특수문자를 이스케이프합니다.
 function escapeHtml(str){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('searchBox').addEventListener('input', (e)=>{
   renderWordList(e.target.value);
 });
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
+  // 상수 n을(를) 선언합니다.
   const n = parseInt(document.getElementById('groupSize').value, 10);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!n || n<1){
     alert('1 이상의 숫자를 입력해주세요.');
     return;
@@ -1664,8 +2568,11 @@ document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
   renderWordList('');
 });
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(WORDS.length===0) return;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(confirm('등록된 단어를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.')){
     WORDS = [];
     saveWords(WORDS);
@@ -1675,10 +2582,15 @@ document.getElementById('clearAllBtn').addEventListener('click', ()=>{
 });
 
 /* ---------- Manual add ---------- */
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('addBtn').addEventListener('click', ()=>{
+  // 상수 w을(를) 선언합니다.
   const w = document.getElementById('addWord').value.trim();
+  // 상수 m을(를) 선언합니다.
   const m = document.getElementById('addMeaning').value.trim();
+  // 상수 e을(를) 선언합니다.
   const e = document.getElementById('addEtym').value.trim();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!w || !m){
     showUploadMsg('영단어와 뜻을 모두 입력해주세요.', 'err');
     return;
@@ -1693,7 +2605,9 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
 });
 
 /* ---------- Excel upload ---------- */
+  // 상수 dropZone을(를) 선언합니다.
 const dropZone = document.getElementById('dropZone');
+  // 상수 fileInput을(를) 선언합니다.
 const fileInput = document.getElementById('fileInput');
 
 dropZone.addEventListener('dragover', (e)=>{e.preventDefault(); dropZone.classList.add('drag');});
@@ -1701,13 +2615,17 @@ dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
 dropZone.addEventListener('drop', (e)=>{
   e.preventDefault();
   dropZone.classList.remove('drag');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(e.target.files.length) handleFile(e.target.files[0]);
 });
 
+// 엑셀 업로드 결과 메시지를 화면에 표시합니다.
 function showUploadMsg(text, type){
+  // 상수 el을(를) 선언합니다.
   const el = document.getElementById('uploadMsg');
   el.textContent = text;
   el.className = 'upload-msg show ' + type;
@@ -1715,48 +2633,76 @@ function showUploadMsg(text, type){
 
 // 워크북에서 단어 목록을 파싱해서 {added: [...], skippedCount: n} 형태로 반환.
 // existingWords: 이미 있는 단어 배열(중복 검사용, 원본은 변경하지 않음)
+// SheetJS 워크북에서 단어/뜻/어원 열을 찾아 단어 데이터를 추출합니다.
 function parseWordsFromWorkbook(wb, existingWords){
+  // 상수 seen을(를) 선언합니다.
   const seen = new Set(existingWords.map(x=>x.word.toLowerCase()));
+  // 상수 added을(를) 선언합니다.
   const added = [];
+  // 실행 중 변경될 수 있는 상태 변수 skipped을(를) 초기화합니다.
   let skipped = 0;
 
   wb.SheetNames.forEach(sheetName=>{
+  // 상수 sheet을(를) 선언합니다.
     const sheet = wb.Sheets[sheetName];
+  // 상수 rows을(를) 선언합니다.
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(rows.length < 2) return;
 
+  // 상수 header을(를) 선언합니다.
     const header = rows[0].map(h=>String(h||'').toLowerCase());
+  // 상수 excludeCols을(를) 선언합니다.
     const excludeCols = ['내가 쓴', '정답 보기', '채점'];
+  // 상수 wordCol을(를) 선언합니다.
     const wordCol = findCol(header, ['영단어','단어','word','english'], excludeCols);
+  // 상수 meanCol을(를) 선언합니다.
     const meanCol = findCol(header, ['뜻','정답(뜻)','meaning','뜻(정답)'], excludeCols);
+  // 상수 etymCol을(를) 선언합니다.
     const etymCol = findCol(header, ['어원','etymology','etym'], excludeCols);
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(wordCol===-1 || meanCol===-1) return; // 이 시트는 형식이 안 맞음(테스트/요약 시트일 수 있음)
 
     for(let i=1;i<rows.length;i++){
+  // 상수 row을(를) 선언합니다.
       const row = rows[i];
+  // 상수 w을(를) 선언합니다.
       const w = String(row[wordCol]||'').trim();
+  // 상수 m을(를) 선언합니다.
       const m = String(row[meanCol]||'').trim();
+  // 상수 et을(를) 선언합니다.
       const et = etymCol!==-1 ? String(row[etymCol]||'').trim() : '';
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(!w || !m) { continue; }
+  // 상수 key을(를) 선언합니다.
       const key = w.toLowerCase();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(seen.has(key)){ skipped++; continue; }
       seen.add(key);
       added.push({word:w, meaning:m, etym:et});
     }
   });
 
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return { added, skipped };
 }
 
+// 사용자가 선택하거나 드롭한 엑셀 파일을 읽어 단어를 추가합니다.
 function handleFile(file){
+  // 상수 reader을(를) 선언합니다.
   const reader = new FileReader();
   reader.onload = (e)=>{
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
     try{
+  // 상수 data을(를) 선언합니다.
       const data = new Uint8Array(e.target.result);
+  // 상수 wb을(를) 선언합니다.
       const wb = XLSX.read(data, {type:'array'});
+  // 상수 { added, skipped }을(를) 선언합니다.
       const { added, skipped } = parseWordsFromWorkbook(wb, WORDS);
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(added.length===0 && skipped===0){
         showUploadMsg('단어를 찾지 못했습니다. "영단어/단어"와 "뜻" 열이 있는 시트인지 확인해주세요.', 'err');
         return;
@@ -1772,97 +2718,144 @@ function handleFile(file){
   reader.readAsArrayBuffer(file);
 }
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function findCol(header, keywords, excludeKeywords){
   // 더 구체적인(긴) 키워드부터 우선 탐색 - "정답(뜻)"이 "뜻"보다 먼저 매칭되도록
+  // 상수 sortedKeywords을(를) 선언합니다.
   const sortedKeywords = keywords.slice().sort((a,b)=> b.length - a.length);
   for(const kw of sortedKeywords){
     for(let i=0;i<header.length;i++){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(excludeKeywords && excludeKeywords.some(ex=> header[i].includes(ex))) continue;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
       if(header[i].includes(kw)) return i;
     }
   }
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return -1;
 }
 
 /* ---------- Test ---------- */
+  // 실행 중 변경될 수 있는 상태 변수 quizState을(를) 초기화합니다.
 let quizState = null;
+  // 실행 중 변경될 수 있는 상태 변수 testMode을(를) 초기화합니다.
 let testMode = 'count'; // 'count' | 'range'
 
 /* ---------- Group completion tracking ---------- */
 // v2: 그룹 키에 실제 단어 구성까지 포함하도록 바뀌어서, 저장 키 이름도 바꿔
 // 예전(v1) 방식으로 저장된 기록이 새 로직과 뒤섞이지 않게 한다.
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function GROUP_RESULT_KEY(){ return deckScopedKey('vocabBench.groupResults.v2', CURRENT_DECK_ID); }
+// 현재 단어장의 그룹별 완료 여부 기록을 불러옵니다.
 function loadGroupResults(){
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 raw을(를) 선언합니다.
     const raw = localStorage.getItem(GROUP_RESULT_KEY());
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(raw) return JSON.parse(raw);
   }catch(e){}
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return {};
 }
+// 현재 단어장의 그룹별 완료 여부 기록을 저장합니다.
 function saveGroupResults(obj){
   localStorage.setItem(GROUP_RESULT_KEY(), JSON.stringify(obj));
 }
+// 그룹 크기·범위·실제 단어 구성을 조합해 그룹 완료 기록용 키를 생성합니다.
 function groupKeyOf(size, from, to, items){
   // 그룹 크기/범위뿐 아니라 실제 들어있는 단어까지 키에 포함시켜서,
   // 같은 자리(예: 1~10번)라도 단어 구성이 바뀌면 이전 완료 기록이 이어지지 않게 한다.
+  // 상수 wordsFingerprint을(를) 선언합니다.
   const wordsFingerprint = (items || []).map(w => w.word.toLowerCase()).join(',');
+  // 실행 중 변경될 수 있는 상태 변수 hash을(를) 초기화합니다.
   let hash = 0;
   for(let i=0;i<wordsFingerprint.length;i++){
     hash = (hash * 31 + wordsFingerprint.charCodeAt(i)) >>> 0;
   }
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return `${size}_${from}_${to}_${hash.toString(36)}`;
 }
+// 특정 그룹의 완료 여부를 저장합니다.
 function setGroupCleared(key, cleared){
+  // 상수 results을(를) 선언합니다.
   const results = loadGroupResults();
   results[key] = cleared;
   saveGroupResults(results);
 }
+// 특정 그룹이 이전 테스트에서 완료되었는지 확인합니다.
 function isGroupCleared(key){
+  // 상수 results을(를) 선언합니다.
   const results = loadGroupResults();
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return !!results[key];
 }
 
 /* ---------- Per-word answer history (단어별 정답 기록) ---------- */
 // 각 단어(소문자 기준)마다 시도 이력을 [1,0,1,1,...] (정답=1, 오답=0) 형태로 순서대로 쌓아둔다.
 // "최근 N회 정답률"과 "전체 정답률" 계산에 함께 쓰인다.
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function WORD_STATS_KEY(){ return deckScopedKey('vocabBench.wordStats.v1', CURRENT_DECK_ID); }
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function loadWordStats(){
+  // 저장 데이터/파일 처리 중 오류가 발생해도 앱 전체가 중단되지 않도록 예외를 처리합니다.
   try{
+  // 상수 raw을(를) 선언합니다.
     const raw = localStorage.getItem(WORD_STATS_KEY());
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(raw) return JSON.parse(raw);
   }catch(e){}
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return {};
 }
+// 현재 단어장의 단어별 누적 통계를 저장합니다.
 function saveWordStats(obj){
   localStorage.setItem(WORD_STATS_KEY(), JSON.stringify(obj));
 }
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function recordWordAnswer(word, isCorrect){
+  // 상수 stats을(를) 선언합니다.
   const stats = loadWordStats();
+  // 상수 key을(를) 선언합니다.
   const key = word.toLowerCase();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!stats[key]) stats[key] = [];
   stats[key].push(isCorrect ? 1 : 0);
   // 이력이 너무 길어지지 않도록 최근 200회까지만 보관
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(stats[key].length > 200) stats[key] = stats[key].slice(-200);
   saveWordStats(stats);
 }
 // history: 해당 단어의 [1,0,1,...] 배열. n이 주어지면 최근 n개만, 없으면 전체 기준.
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function accuracyOf(history, n){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!history || history.length===0) return null; // 시도 기록 자체가 없음
+  // 상수 slice을(를) 선언합니다.
   const slice = n ? history.slice(-n) : history;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(slice.length===0) return null;
+  // 상수 correct을(를) 선언합니다.
   const correct = slice.reduce((a,b)=>a+b, 0);
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return Math.round((correct / slice.length) * 1000) / 10;
 }
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function attemptsCountOf(history){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return history ? history.length : 0;
 }
 
+// 테스트 설정 화면을 초기 상태로 복원하고 현재 단어장 기준 선택지를 갱신합니다.
 function resetTestSetup(){
+  // 상수 setupEl을(를) 선언합니다.
   const setupEl = document.getElementById('testSetup');
+  // 상수 emptyEl을(를) 선언합니다.
   const emptyEl = document.getElementById('testEmptyState');
   document.getElementById('quizArea').style.display = 'none';
   document.getElementById('resultArea').style.display = 'none';
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(WORDS.length===0){
     setupEl.style.display = 'none';
     emptyEl.style.display = 'block';
@@ -1871,9 +2864,13 @@ function resetTestSetup(){
   emptyEl.style.display = 'none';
   setupEl.style.display = 'block';
 
+  // 상수 countSelect을(를) 선언합니다.
   const countSelect = document.getElementById('countSelect');
+  // 상수 options을(를) 선언합니다.
   const options = [10,20,30,50, WORDS.length];
+  // 상수 finalOptions을(를) 선언합니다.
   const finalOptions = [...new Set(options.filter(n=>n<=WORDS.length))];
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(finalOptions[finalOptions.length-1] !== WORDS.length) finalOptions.push(WORDS.length);
 
   countSelect.innerHTML = finalOptions.map((n,i)=>
@@ -1896,7 +2893,9 @@ function resetTestSetup(){
   updateAccuracyHint();
 
   // 모드 탭 리스너 (한 번만 바인딩)
+  // 상수 tabs을(를) 선언합니다.
   const tabs = document.getElementById('rangeModeTabs');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!tabs.dataset.bound){
     tabs.dataset.bound = '1';
     tabs.querySelectorAll('button').forEach(b=>{
@@ -1908,11 +2907,13 @@ function resetTestSetup(){
         document.getElementById('modeRange').style.display = testMode==='range' ? 'block':'none';
         document.getElementById('modeAccuracy').style.display = testMode==='accuracy' ? 'block':'none';
         document.getElementById('rangeErr').textContent = '';
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
         if(testMode==='accuracy') updateAccuracyHint();
       });
     });
 
     // 정답률 모드의 입력값이 바뀔 때마다 "몇 개가 해당하는지" 힌트를 갱신
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
     document.getElementById('accRecentN').addEventListener('input', updateAccuracyHint);
     document.querySelectorAll('input[name=accScope]').forEach(r=>{
       r.addEventListener('change', ()=>{
@@ -1926,11 +2927,17 @@ function resetTestSetup(){
       btn.addEventListener('click', (e)=>{
         e.preventDefault();
         e.stopPropagation();
+  // 상수 wrap을(를) 선언합니다.
         const wrap = btn.closest('.stepper');
+  // 상수 input을(를) 선언합니다.
         const input = wrap.querySelector('input[type=number]');
+  // 상수 step을(를) 선언합니다.
         const step = parseInt(btn.dataset.step, 10);
+  // 상수 min을(를) 선언합니다.
         const min = parseInt(input.min || '1', 10);
+  // 상수 max을(를) 선언합니다.
         const max = parseInt(input.max || '99', 10);
+  // 실행 중 변경될 수 있는 상태 변수 v을(를) 초기화합니다.
         let v = (parseInt(input.value, 10) || min) + step;
         v = Math.max(min, Math.min(max, v));
         input.value = v;
@@ -1942,6 +2949,7 @@ function resetTestSetup(){
     });
 
     // 정답률 슬라이더 값 표시
+  // 상수 thresholdSlider을(를) 선언합니다.
     const thresholdSlider = document.getElementById('accThreshold');
     thresholdSlider.addEventListener('input', ()=>{
       document.getElementById('accThresholdVal').textContent = thresholdSlider.value;
@@ -1953,37 +2961,57 @@ function resetTestSetup(){
 }
 
 // 라디오 상태에 맞춰 카드 강조 클래스를 갱신 (:has() 미지원 브라우저 대비 이중 안전장치)
+// 정답률 기준 선택 카드의 시각적 선택 상태를 갱신합니다.
 function updateAccScopeCardStyle(){
   document.querySelectorAll('.acc-scope-card').forEach(card=>{
+  // 상수 radio을(를) 선언합니다.
     const radio = card.querySelector('input[type=radio]');
     card.classList.toggle('checked', radio.checked);
   });
 }
 
 // 정답률 조건에 맞는 단어들을 골라낸다.
+// 설정된 정답률 기준에 따라 테스트 대상 단어를 추립니다.
 function getWordsByAccuracyFilter(){
+  // 상수 scope을(를) 선언합니다.
   const scope = document.querySelector('input[name=accScope]:checked').value; // 'recentN' | 'all'
+  // 상수 threshold을(를) 선언합니다.
   const threshold = parseInt(document.getElementById('accThreshold').value, 10);
+  // 상수 recentN을(를) 선언합니다.
   const recentN = parseInt(document.getElementById('accRecentN').value, 10);
+  // 상수 stats을(를) 선언합니다.
   const stats = loadWordStats();
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(isNaN(threshold)) return { pool: [], error: '정답률 기준(%)을 입력해주세요.' };
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(scope==='recentN' && (!recentN || recentN<1)) return { pool: [], error: '최근 시험 횟수를 1 이상으로 입력해주세요.' };
 
+  // 상수 pool을(를) 선언합니다.
   const pool = WORDS.filter(w=>{
+  // 상수 history을(를) 선언합니다.
     const history = stats[w.word.toLowerCase()];
+  // 상수 acc을(를) 선언합니다.
     const acc = scope==='recentN' ? accuracyOf(history, recentN) : accuracyOf(history, null);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(acc === null) return true; // 시도 기록이 아예 없는 단어는 "아직 정답률 모름" -> 대상에 포함시켜 계속 노출
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
     return acc <= threshold;
   });
 
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return { pool, error: null };
 }
 
+// 정답률 필터 조건에 해당하는 단어 수를 계산해 안내 문구를 갱신합니다.
 function updateAccuracyHint(){
+  // 상수 hintEl을(를) 선언합니다.
   const hintEl = document.getElementById('accHint');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!hintEl) return;
+  // 상수 { pool, error }을(를) 선언합니다.
   const { pool, error } = getWordsByAccuracyFilter();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(error){
     hintEl.textContent = '';
     return;
@@ -1991,49 +3019,67 @@ function updateAccuracyHint(){
   hintEl.textContent = `조건에 맞는 단어: ${pool.length}개 (시도 기록이 없는 단어는 항상 포함됩니다)`;
 }
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
 document.getElementById('startTestBtn').addEventListener('click', ()=>{
   document.getElementById('rangeErr').textContent = '';
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(testMode === 'range'){
+  // 상수 from을(를) 선언합니다.
     const from = parseInt(document.getElementById('rangeFrom').value, 10);
+  // 상수 to을(를) 선언합니다.
     const to = parseInt(document.getElementById('rangeTo').value, 10);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length){
       document.getElementById('rangeErr').textContent = `1 ~ ${WORDS.length} 사이의 번호를 입력해주세요.`;
       return;
     }
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(from > to){
       document.getElementById('rangeErr').textContent = '시작 번호가 끝 번호보다 클 수 없습니다.';
       return;
     }
+  // 상수 orderShuffle을(를) 선언합니다.
     const orderShuffle = document.querySelector('input[name=rangeOrder]:checked').value === 'shuffle';
+  // 실행 중 변경될 수 있는 상태 변수 pool을(를) 초기화합니다.
     let pool = WORDS.slice(from-1, to);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(orderShuffle) pool = shuffle(pool);
     startQuiz(pool);
   }else if(testMode === 'accuracy'){
+  // 상수 { pool, error }을(를) 선언합니다.
     const { pool, error } = getWordsByAccuracyFilter();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(error){
       document.getElementById('rangeErr').textContent = error;
       return;
     }
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(pool.length===0){
       document.getElementById('rangeErr').textContent = '조건에 맞는 단어가 없습니다.';
       return;
     }
     startQuiz(shuffle(pool));
   }else{
+  // 상수 n을(를) 선언합니다.
     const n = parseInt(document.getElementById('countSelect').dataset.selected || '10', 10);
     startQuiz(shuffle(WORDS).slice(0, n));
   }
 });
 
+// 배열의 원본을 유지하면서 항목 순서를 무작위로 섞은 새 배열을 반환합니다.
 function shuffle(arr){
+  // 상수 a을(를) 선언합니다.
   const a = arr.slice();
   for(let i=a.length-1;i>0;i--){
+  // 상수 j을(를) 선언합니다.
     const j = Math.floor(Math.random()*(i+1));
     [a[i],a[j]] = [a[j],a[i]];
   }
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return a;
 }
 
+// 주어진 단어 배열로 테스트를 시작하고 퀴즈 상태를 초기화합니다.
 function startQuiz(pool, groupKey){
   quizState = {
     items: pool,
@@ -2052,30 +3098,45 @@ function startQuiz(pool, groupKey){
 // Enter 키 핸들러는 앱 전체에서 단 한 번만 등록한다.
 // (문제마다 등록/해제를 반복하면 타이밍에 따라 이벤트가 중복 처리될 수 있어
 //  퀴즈 화면이 떠 있는 동안엔 항상 켜져 있고, quizState를 통해 현재 문제를 참조한다.)
+  // 실행 중 변경될 수 있는 상태 변수 lastEnterHandledAt을(를) 초기화합니다.
 let lastEnterHandledAt = 0;
 document.addEventListener('keydown', (e)=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(e.key !== 'Enter') return;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(e.isComposing) return; // 한글 등 조합 입력 확정 Enter는 무시
 
+  // 상수 quizArea을(를) 선언합니다.
   const quizArea = document.getElementById('quizArea');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!quizArea || quizArea.style.display === 'none') return;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!quizState) return;
 
   // 같은 Enter 입력이 짧은 시간 내에 두 번 이상 처리되는 것을 방지
+  // 상수 now을(를) 선언합니다.
   const now = Date.now();
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(now - lastEnterHandledAt < 200) { e.preventDefault(); return; }
   lastEnterHandledAt = now;
 
   e.preventDefault();
+  // 상수 st을(를) 선언합니다.
   const st = quizState;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!st.answered) checkAnswer();
   else nextStep();
 });
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function renderQuizStep(){
+  // 상수 st을(를) 선언합니다.
   const st = quizState;
+  // 상수 total을(를) 선언합니다.
   const total = st.items.length;
+  // 상수 cur을(를) 선언합니다.
   const cur = st.items[st.idx];
+  // 상수 area을(를) 선언합니다.
   const area = document.getElementById('quizArea');
 
   area.innerHTML = `
@@ -2091,15 +3152,20 @@ function renderQuizStep(){
     </div>
   `;
 
+  // 상수 input을(를) 선언합니다.
   const input = document.getElementById('quizInput');
   input.focus();
   st.answered = false;
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('quizSubmit').addEventListener('click', ()=> checkAnswer());
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
 }
 
+// 정답 비교 전에 괄호와 공백 등을 정규화해 불필요한 표기 차이를 제거합니다.
 function normalize(s){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return String(s||'')
     .replace(/[\(（][^)）]*[\)）]/g,'') // 괄호와 그 안의 내용을 통째로 제거 (부가 설명은 안 써도 정답 처리)
     .replace(/[\[［][^\]］]*[\]］]/g,'')
@@ -2108,32 +3174,48 @@ function normalize(s){
 }
 
 // "뜻1, 뜻2" 형태의 정답을 쉼표 기준으로 분리 (괄호 안의 쉼표는 무시)
+// 쉼표로 구분된 여러 뜻을 괄호 내부의 쉼표는 무시하면서 분리합니다.
 function splitMeanings(meaning){
+  // 상수 parts을(를) 선언합니다.
   const parts = [];
+  // 실행 중 변경될 수 있는 상태 변수 depth을(를) 초기화합니다.
   let depth = 0, cur = '';
   for(const ch of String(meaning||'')){
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(ch==='('||ch==='['){ depth++; cur+=ch; }
     else if(ch===')'||ch===']'){ depth=Math.max(0,depth-1); cur+=ch; }
     else if(ch===',' && depth===0){ parts.push(cur); cur=''; }
     else{ cur+=ch; }
   }
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(cur.trim()) parts.push(cur);
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return parts.map(p=>normalize(p)).filter(p=>p.length>0);
 }
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function checkAnswer(skip){
+  // 상수 st을(를) 선언합니다.
   const st = quizState;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(st.answered) return;
   st.answered = true;
+  // 상수 cur을(를) 선언합니다.
   const cur = st.items[st.idx];
+  // 상수 input을(를) 선언합니다.
   const input = document.getElementById('quizInput');
+  // 상수 userVal을(를) 선언합니다.
   const userVal = skip ? '' : normalize(input.value);
+  // 상수 acceptable을(를) 선언합니다.
   const acceptable = splitMeanings(cur.meaning);
+  // 상수 isCorrect을(를) 선언합니다.
   const isCorrect = !skip && userVal.length>0 && acceptable.includes(userVal);
 
   recordWordAnswer(cur.word, isCorrect);
 
+  // 상수 fb을(를) 선언합니다.
   const fb = document.getElementById('quizFeedback');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(isCorrect){
     st.correct++;
     input.classList.add('correct');
@@ -2153,9 +3235,12 @@ function checkAnswer(skip){
   document.getElementById('quizSkip').style.display = 'none';
 }
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function nextStep(){
+  // 상수 st을(를) 선언합니다.
   const st = quizState;
   st.idx++;
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(st.idx >= st.items.length){
     showResult();
   }else{
@@ -2163,21 +3248,31 @@ function nextStep(){
   }
 }
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function showResult(){
+  // 상수 st을(를) 선언합니다.
   const st = quizState;
   document.getElementById('quizArea').style.display = 'none';
+  // 상수 area을(를) 선언합니다.
   const area = document.getElementById('resultArea');
   area.style.display = 'block';
 
+  // 상수 total을(를) 선언합니다.
   const total = st.items.length;
+  // 상수 pct을(를) 선언합니다.
   const pct = total>0 ? Math.round((st.correct/total)*1000)/10 : 0;
   saveAccuracy(pct);
 
+  // 실행 중 변경될 수 있는 상태 변수 groupClearedNote을(를) 초기화합니다.
   let groupClearedNote = '';
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(st.groupKey){
+  // 상수 wasCleared을(를) 선언합니다.
     const wasCleared = isGroupCleared(st.groupKey); // 이번 시험 시작 전 상태
+  // 상수 cleared을(를) 선언합니다.
     const cleared = st.correct === total;
     setGroupCleared(st.groupKey, cleared);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(cleared){
       groupClearedNote = `<div class="group-cleared-note">✓ 이 그룹을 모두 맞혔습니다. 완료로 표시됩니다.</div>`;
     }else if(wasCleared){
@@ -2212,7 +3307,9 @@ function showResult(){
     </div>
   `;
 
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('retryBtn').addEventListener('click', ()=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(st.groupKey){
       // 그룹 시험이었으면 같은 그룹 단어로 즉시 재시작 (groupKey 유지 → 이번에 통과하면 완료 처리)
       startQuiz(shuffle(st.items), st.groupKey);
@@ -2220,12 +3317,16 @@ function showResult(){
       resetTestSetup();
     }
   });
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
     renderWordList(document.getElementById('searchBox').value);
   });
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(st.wrongList.length){
+  // 해당 DOM 요소에 사용자 동작 이벤트를 연결합니다.
     document.getElementById('retryWrongBtn').addEventListener('click', ()=>{
+  // 상수 pool을(를) 선언합니다.
       const pool = st.wrongList.map(w=> WORDS.find(x=>x.word===w.word) || {word:w.word, meaning:w.meaning, etym:w.etym});
       startQuiz(pool);
     });
@@ -2236,8 +3337,11 @@ function showResult(){
 // 단어장 시스템 진입점: 이전에 열어뒀던 단어장이 있으면 바로 그 안으로 들어가고,
 // 없으면 단어장 목록(홈 화면)을 보여준다.
 (function initApp(){
+  // 상수 lastDeckId을(를) 선언합니다.
   const lastDeckId = getCurrentDeckId();
+  // 상수 lastDeckExists을(를) 선언합니다.
   const lastDeckExists = lastDeckId && DECKS.some(d=>d.id===lastDeckId);
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(lastDeckExists){
     openDeck(lastDeckId);
   }else{
@@ -2249,29 +3353,42 @@ function showResult(){
 /* ---------- PWA: service worker & install prompt ---------- */
 // sw.js는 "네트워크 우선" 방식으로 동작해서, 온라인 상태면 늘 최신 index.html을
 // 그대로 보여준다. 그래서 별도의 "새 버전 있음" 알림 없이도 최신 상태가 유지된다.
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
 if('serviceWorker' in navigator){
+  // 브라우저 전역 이벤트를 감시해 앱 상태 변화에 대응합니다.
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
 }
 
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function isStandalone(){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
+// 아래 함수는 이름과 내부 로직을 기준으로 해당 기능을 수행합니다.
 function isIOS(){
+  // 함수의 계산 결과를 호출한 쪽으로 반환합니다.
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
 if(!isStandalone() && isIOS()){
+  // 상수 hint을(를) 선언합니다.
   const hint = document.getElementById('iosHint');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(hint) hint.classList.add('show');
 }
 
+  // 실행 중 변경될 수 있는 상태 변수 deferredInstallPrompt을(를) 초기화합니다.
 let deferredInstallPrompt = null;
+  // 브라우저 전역 이벤트를 감시해 앱 상태 변화에 대응합니다.
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
   deferredInstallPrompt = e;
+  // 상수 btn을(를) 선언합니다.
   const btn = document.getElementById('installBtn');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(btn && !isStandalone()) btn.style.display = 'inline-flex';
 });
 
@@ -2279,9 +3396,12 @@ window.addEventListener('beforeinstallprompt', (e)=>{
 // DOMContentLoaded를 기다리지 않고 바로 리스너를 건다.
 // (DOMContentLoaded를 기다리면 그 시점엔 이미 이벤트가 지나가 있어 콜백이 실행되지 않는다.)
 (function bindInstallBtn(){
+  // 상수 btn을(를) 선언합니다.
   const btn = document.getElementById('installBtn');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(!btn) return;
   btn.addEventListener('click', async ()=>{
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
     if(!deferredInstallPrompt) return;
     deferredInstallPrompt.prompt();
     await deferredInstallPrompt.userChoice;
@@ -2290,10 +3410,14 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   });
 })();
 
+  // 브라우저 전역 이벤트를 감시해 앱 상태 변화에 대응합니다.
 window.addEventListener('appinstalled', ()=>{
+  // 상수 btn을(를) 선언합니다.
   const btn = document.getElementById('installBtn');
+  // 아래 조건이 참인 경우에만 해당 분기를 실행합니다.
   if(btn) btn.style.display = 'none';
 });
+/* ===== JavaScript: 단어장 앱의 동작 로직 끝 ===== */
 </script>
 </body>
 </html>
