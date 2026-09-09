@@ -671,24 +671,24 @@
     min-height:16px;
   }
 
-  .selection-type-tabs{
+  .accuracy-range-tabs{
     display:flex;
-    gap:7px;
-    margin-bottom:12px;
+    gap:6px;
+    margin-bottom:10px;
   }
-  .selection-type-tabs button{
+  .accuracy-range-tabs button{
     flex:1;
     appearance:none;
     border:1px solid var(--line);
     background:var(--card);
     color:var(--muted);
     border-radius:8px;
-    padding:9px 10px;
+    padding:8px 10px;
     font-size:13px;
     font-family:inherit;
     cursor:pointer;
   }
-  .selection-type-tabs button.sel{
+  .accuracy-range-tabs button.sel{
     border-color:var(--accent);
     background:var(--accent-soft);
     color:var(--accent);
@@ -727,6 +727,25 @@
     color:var(--accent);
     font-weight:700;
   }
+  .test-group-buttons.compact{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:6px;
+  }
+  .test-group-buttons.compact button{
+    padding:8px 4px;
+    font-size:12.5px;
+  }
+  .test-group-buttons.compact button span{
+    display:none;
+  }
+  .test-group-selected{
+    margin-top:7px;
+    font-size:11.5px;
+    color:var(--muted);
+    text-align:center;
+  }
+
   .test-group-hint{
     font-size:12px;
     color:var(--muted);
@@ -1116,33 +1135,27 @@
       </div>
 
       <div id="modeCount">
-        <div class="selection-type-tabs" id="selectionTypeTabs">
-          <button type="button" data-select-type="count" class="sel">단어 수 선택</button>
-          <button type="button" data-select-type="group">그룹 선택</button>
-        </div>
-
-        <div id="countSelectPanel">
-          <div class="count-select" id="countSelect"></div>
-        </div>
-
-        <div id="groupSelectPanel" style="display:none;">
-          <div class="test-group-buttons" id="testGroupButtons"></div>
-          <div class="test-group-hint">여러 그룹을 선택할 수 있습니다. 선택한 그룹은 무작위로 출제됩니다.</div>
-        </div>
+        <div class="count-select" id="countSelect"></div>
       </div>
 
       <div id="modeAccuracy" style="display:none;">
-        <div class="test-group-select">
-          <div class="test-group-label">범위 선택</div>
-          <div class="test-group-buttons" id="accuracyGroupButtons"></div>
-          <div class="test-group-hint">여러 그룹을 선택하면 선택한 그룹 안에서 정답률 조건을 적용합니다.</div>
+        <div class="accuracy-range-tabs" id="accuracyRangeTabs">
+          <button type="button" data-range-type="group" class="sel">그룹</button>
+          <button type="button" data-range-type="number">번호 범위</button>
         </div>
 
-        <div class="range-inputs" style="display:none;">
+        <div id="accuracyGroupPanel">
+          <div class="test-group-buttons compact" id="accuracyGroupButtons"></div>
+          <div class="test-group-selected" id="accuracyGroupSelected">전체 그룹</div>
+        </div>
+
+        <div id="accuracyNumberPanel" style="display:none;">
+          <div class="range-inputs">
           <input type="number" id="rangeFrom" min="1" placeholder="시작 번호">
           <span>~</span>
           <input type="number" id="rangeTo" min="1" placeholder="끝 번호">
           <span class="range-max" id="rangeMaxHint"></span>
+          </div>
         </div>
 
         <div class="acc-scope-cards">
@@ -1922,69 +1935,48 @@ function attemptsCountOf(history){
 }
 
 function renderTestGroupButtons(){
-  const normalEl = document.getElementById('testGroupButtons');
   const accuracyEl = document.getElementById('accuracyGroupButtons');
   const groups = buildGroups(GROUP_SIZE);
+  if(!accuracyEl) return;
 
-  function render(el, allLabel){
-    if(!el) return;
-    el.innerHTML = [
-      `<button type="button" data-group="all" class="sel">전체</button>`,
-      ...groups.map((g,i)=>
-        `<button type="button" data-group="${i}">${i+1}그룹 <span>(${g.from}~${g.to})</span></button>`
-      )
-    ].join('');
-  }
+  accuracyEl.innerHTML = [
+    `<button type="button" data-group="all" class="sel">전체</button>`,
+    ...groups.map((g,i)=>
+      `<button type="button" data-group="${i}">${i+1}그룹 <span>(${g.from}~${g.to})</span></button>`
+    )
+  ].join('');
 
-  render(normalEl);
-  render(accuracyEl);
-
-  // 일반 테스트: 여러 그룹을 동시에 선택 가능
-  if(normalEl){
-    normalEl.querySelectorAll('button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const key = btn.dataset.group;
-        if(key === 'all'){
-          normalEl.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-          btn.classList.add('sel');
-          return;
-        }
-        const allBtn = normalEl.querySelector('[data-group="all"]');
-        allBtn.classList.remove('sel');
+  accuracyEl.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.group;
+      if(key === 'all'){
+        accuracyEl.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+        btn.classList.add('sel');
+      }else{
+        accuracyEl.querySelector('[data-group="all"]').classList.remove('sel');
         btn.classList.toggle('sel');
-        if(!normalEl.querySelector('button.sel')) allBtn.classList.add('sel');
-      });
-    });
-  }
-
-  // 정답률 테스트: 여러 그룹을 동시에 선택 가능. 기존 범위 입력과 호환되도록
-  // 선택 결과를 하나의 최소~최대 범위로 반영한다.
-  if(accuracyEl){
-    accuracyEl.querySelectorAll('button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const key = btn.dataset.group;
-        if(key === 'all'){
-          accuracyEl.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-          btn.classList.add('sel');
-        }else{
-          accuracyEl.querySelector('[data-group="all"]').classList.remove('sel');
-          btn.classList.toggle('sel');
-          if(!accuracyEl.querySelector('button.sel')) accuracyEl.querySelector('[data-group="all"]').classList.add('sel');
+        if(!accuracyEl.querySelector('button.sel')){
+          accuracyEl.querySelector('[data-group="all"]').classList.add('sel');
         }
-        syncAccuracyGroupRange();
-        document.getElementById('rangeErr').textContent = '';
-        updateAccuracyHint();
-      });
+      }
+      syncAccuracyGroupRange();
+      document.getElementById('rangeErr').textContent = '';
+      updateAccuracyHint();
     });
-  }
+  });
+  updateAccuracyGroupSelected();
 }
 
-function getSelectedNormalGroups(){
-  const el = document.getElementById('testGroupButtons');
-  if(!el) return null;
+function updateAccuracyGroupSelected(){
+  const el = document.getElementById('accuracyGroupButtons');
+  const out = document.getElementById('accuracyGroupSelected');
+  if(!el || !out) return;
   const selected = [...el.querySelectorAll('button.sel')].map(b=>b.dataset.group);
-  if(selected.includes('all') || selected.length===0) return buildGroups(GROUP_SIZE);
-  return selected.map(i=>buildGroups(GROUP_SIZE)[parseInt(i,10)]).filter(Boolean);
+  if(selected.includes('all') || selected.length===0){
+    out.textContent = '전체 그룹';
+    return;
+  }
+  out.textContent = selected.map(i=>`${parseInt(i,10)+1}그룹`).join(' · ');
 }
 
 function syncAccuracyGroupRange(){
@@ -1995,11 +1987,12 @@ function syncAccuracyGroupRange(){
   if(selected.includes('all') || selected.length===0){
     document.getElementById('rangeFrom').value = 1;
     document.getElementById('rangeTo').value = WORDS.length;
-    return;
+  }else{
+    const picked = selected.map(i=>groups[parseInt(i,10)]).filter(Boolean);
+    document.getElementById('rangeFrom').value = Math.min(...picked.map(g=>g.from));
+    document.getElementById('rangeTo').value = Math.max(...picked.map(g=>g.to));
   }
-  const picked = selected.map(i=>groups[parseInt(i,10)]).filter(Boolean);
-  document.getElementById('rangeFrom').value = Math.min(...picked.map(g=>g.from));
-  document.getElementById('rangeTo').value = Math.max(...picked.map(g=>g.to));
+  updateAccuracyGroupSelected();
 }
 
 function resetTestSetup(){
@@ -2042,16 +2035,19 @@ function resetTestSetup(){
   updateAccuracyHint();
 
   // 단어 수 / 그룹 선택 전환
-  const selectionTabs = document.getElementById('selectionTypeTabs');
-  if(!selectionTabs.dataset.bound){
-    selectionTabs.dataset.bound = '1';
-    selectionTabs.querySelectorAll('button').forEach(b=>{
+  // 정답률 범위 선택 방식: 그룹 / 번호 범위
+  const accuracyRangeTabs = document.getElementById('accuracyRangeTabs');
+  if(accuracyRangeTabs && !accuracyRangeTabs.dataset.bound){
+    accuracyRangeTabs.dataset.bound = '1';
+    accuracyRangeTabs.querySelectorAll('button').forEach(b=>{
       b.addEventListener('click', ()=>{
-        selectionTabs.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+        accuracyRangeTabs.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
         b.classList.add('sel');
-        const isGroup = b.dataset.selectType === 'group';
-        document.getElementById('countSelectPanel').style.display = isGroup ? 'none' : 'block';
-        document.getElementById('groupSelectPanel').style.display = isGroup ? 'block' : 'none';
+        const isGroup = b.dataset.rangeType === 'group';
+        document.getElementById('accuracyGroupPanel').style.display = isGroup ? 'block' : 'none';
+        document.getElementById('accuracyNumberPanel').style.display = isGroup ? 'none' : 'block';
+        document.getElementById('rangeErr').textContent = '';
+        updateAccuracyHint();
       });
     });
   }
@@ -2131,14 +2127,30 @@ function getWordsByAccuracyFilter(){
 
   if(isNaN(threshold)) return { pool: [], error: '정답률 기준(%)을 입력해주세요.' };
   if(scope==='recentN' && (!recentN || recentN<1)) return { pool: [], error: '최근 시험 횟수를 1 이상으로 입력해주세요.' };
-  if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length){
-    return { pool: [], error: `1 ~ ${WORDS.length} 사이의 번호를 입력해주세요.` };
-  }
-  if(from > to){
-    return { pool: [], error: '시작 번호가 끝 번호보다 클 수 없습니다.' };
+  const rangeType = document.querySelector('#accuracyRangeTabs button.sel')?.dataset.rangeType || 'group';
+  if(rangeType === 'number'){
+    if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length){
+      return { pool: [], error: `1 ~ ${WORDS.length} 사이의 번호를 입력해주세요.` };
+    }
+    if(from > to){
+      return { pool: [], error: '시작 번호가 끝 번호보다 클 수 없습니다.' };
+    }
   }
 
-  const rangePool = WORDS.slice(from-1, to);
+  let rangePool;
+  if(rangeType === 'group'){
+    const groupEl = document.getElementById('accuracyGroupButtons');
+    const selected = groupEl ? [...groupEl.querySelectorAll('button.sel')].map(b=>b.dataset.group) : ['all'];
+    if(selected.includes('all') || selected.length===0){
+      rangePool = WORDS.slice();
+    }else{
+      const groups = buildGroups(GROUP_SIZE);
+      const selectedIndexes = new Set(selected.map(i=>parseInt(i,10)));
+      rangePool = groups.filter((g,i)=>selectedIndexes.has(i)).flatMap(g=>g.items);
+    }
+  }else{
+    rangePool = WORDS.slice(from-1, to);
+  }
   const pool = rangePool.filter(w=>{
     const history = stats[w.word.toLowerCase()];
     const acc = scope==='recentN' ? accuracyOf(history, recentN) : accuracyOf(history, null);
