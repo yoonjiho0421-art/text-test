@@ -742,13 +742,6 @@
   .test-group-buttons.compact button span{
     display:none;
   }
-  .test-group-selected{
-    margin-top:7px;
-    font-size:11.5px;
-    color:var(--muted);
-    text-align:center;
-  }
-
   .test-group-hint{
     font-size:12px;
     color:var(--muted);
@@ -1149,7 +1142,6 @@
 
         <div id="accuracyGroupPanel">
           <div class="test-group-buttons compact" id="accuracyGroupButtons"></div>
-          <div class="test-group-selected" id="accuracyGroupSelected">전체 그룹</div>
         </div>
 
         <div id="accuracyNumberPanel" style="display:none;">
@@ -2040,8 +2032,7 @@ function applyTestSettingsToUI(){
     const chosen = wanted.has('all') ? ['all'] : valid.filter(k=>k!=='all' && wanted.has(k));
     groupEl.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', chosen.includes(b.dataset.group)));
     if(!groupEl.querySelector('button.sel')) groupEl.querySelector('[data-group="all"]')?.classList.add('sel');
-    updateAccuracyGroupSelected();
-  }
+    }
 
   const scopeRadio = document.querySelector(`input[name=accScope][value="${testSettings.accScope==='all'?'all':'recentN'}"]`);
   if(scopeRadio) scopeRadio.checked = true;
@@ -2200,20 +2191,8 @@ function renderTestGroupButtons(){
   ].join('');
   if(!accuracyEl.querySelector('button.sel')) accuracyEl.querySelector('[data-group="all"]')?.classList.add('sel');
   bindAccuracyGroupDrag();
-  updateAccuracyGroupSelected();
 }
 
-function updateAccuracyGroupSelected(){
-  const el = document.getElementById('accuracyGroupButtons');
-  const out = document.getElementById('accuracyGroupSelected');
-  if(!el || !out) return;
-  const selected = [...el.querySelectorAll('button.sel')].map(b=>b.dataset.group);
-  if(selected.includes('all') || selected.length===0){
-    out.textContent = '전체 그룹';
-    return;
-  }
-  out.textContent = selected.map(i=>`${parseInt(i,10)+1}그룹`).join(' · ');
-}
 
 function syncAccuracyGroupRange(){
   const el = document.getElementById('accuracyGroupButtons');
@@ -2228,7 +2207,6 @@ function syncAccuracyGroupRange(){
     document.getElementById('rangeFrom').value = Math.min(...picked.map(g=>g.from));
     document.getElementById('rangeTo').value = Math.max(...picked.map(g=>g.to));
   }
-  updateAccuracyGroupSelected();
   if(testSettings){
     testSettings.selectedGroups = getSelectedAccuracyGroups();
     testSettings.rangeFrom = parseInt(document.getElementById('rangeFrom').value,10) || 1;
