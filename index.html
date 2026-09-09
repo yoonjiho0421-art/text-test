@@ -30,7 +30,10 @@
     --bad-soft:#fbe8e4;
     --muted:#78716a;
   }
-  *{box-sizing:border-box;}
+  *{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent; /* 안드로이드/iOS에서 버튼 탭 시 뜨는 파란/회색 반투명 하이라이트 제거 */
+  }
   body{
     margin:0;
     background:var(--paper);
@@ -692,6 +695,8 @@
     padding:13px 14px;
     cursor:pointer;
     transition:border-color .15s, background .15s;
+    user-select:none;
+    -webkit-user-select:none;
   }
   .acc-scope-card input[type=radio]{
     position:absolute;
@@ -740,6 +745,8 @@
     color:var(--ink);
     cursor:pointer;
     font-family:inherit;
+    user-select:none;
+    -webkit-user-select:none;
   }
   .stepper-btn:active{background:var(--line);}
   .stepper input[type=number]{
