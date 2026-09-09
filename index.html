@@ -677,6 +677,43 @@
     min-height:16px;
   }
 
+  .acc-scope-row{
+    text-align:left;
+    font-size:13.5px;
+    margin-bottom:10px;
+    color:var(--ink);
+  }
+  .acc-scope-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+  }
+  .acc-threshold-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13.5px;
+    margin:14px 0 10px;
+    color:var(--ink);
+  }
+  .acc-inline-input{
+    width:56px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    font-size:13.5px;
+    font-family:inherit;
+    text-align:center;
+  }
+  .acc-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:16px;
+    min-height:16px;
+    line-height:1.5;
+  }
+
   .quiz-card{
     background:var(--card);
     border:1px solid var(--line);
@@ -904,6 +941,7 @@
       <div class="range-mode-tabs" id="rangeModeTabs">
         <button data-mode="count" class="mode-sel">개수로 선택</button>
         <button data-mode="range">범위로 선택</button>
+        <button data-mode="accuracy">정답률로 선택</button>
       </div>
 
       <div id="modeCount">
@@ -921,6 +959,21 @@
           <label><input type="radio" name="rangeOrder" value="inorder" checked> 순서대로</label>
           <label><input type="radio" name="rangeOrder" value="shuffle"> 무작위로</label>
         </div>
+      </div>
+
+      <div id="modeAccuracy" style="display:none;">
+        <div class="acc-scope-row">
+          <label><input type="radio" name="accScope" value="recentN" checked> 최근 <input type="number" id="accRecentN" min="1" value="3" class="acc-inline-input"> 회 시험 기준</label>
+        </div>
+        <div class="acc-scope-row">
+          <label><input type="radio" name="accScope" value="all"> 시험 횟수 상관없이 전체 기록 기준</label>
+        </div>
+        <div class="acc-threshold-row">
+          <span>정답률</span>
+          <input type="number" id="accThreshold" min="0" max="100" value="50" class="acc-inline-input">
+          <span>% 이하인 단어만</span>
+        </div>
+        <div class="acc-hint" id="accHint"></div>
       </div>
 
       <button class="start-btn" id="startTestBtn">테스트 시작</button>
@@ -1116,7 +1169,7 @@ function openDeleteModal(deck){
     document.getElementById('deleteModalConfirm').removeEventListener('click', onConfirm);
   }
   function onConfirm(){
-    ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
+    ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2','vocabBench.wordStats.v1'].forEach(k=>{
       localStorage.removeItem(deckScopedKey(k, deck.id));
     });
     DECKS = DECKS.filter(d=>d.id!==deck.id);
@@ -1241,6 +1294,26 @@ function loadDeckData(){
   IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
   GROUP_SIZE = loadGroupSize();
   openGroups.clear();
+
+  // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
+  if(IS_FIRST_RUN){
+    fetch('./words.xlsx')
+      .then(res=>{
+        if(!res.ok) throw new Error('words.xlsx not found');
+        return res.arrayBuffer();
+      })
+      .then(buf=>{
+        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+        const { added } = parseWordsFromWorkbook(wb, WORDS);
+        if(added.length===0) return;
+        WORDS.push(...added);
+        saveWords(WORDS);
+        renderWordList(document.getElementById('searchBox').value);
+      })
+      .catch(()=>{
+        // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
+      });
+  }
 }
 
 /* ---------- Tabs ---------- */
@@ -1610,6 +1683,41 @@ function isGroupCleared(key){
   return !!results[key];
 }
 
+/* ---------- Per-word answer history (단어별 정답 기록) ---------- */
+// 각 단어(소문자 기준)마다 시도 이력을 [1,0,1,1,...] (정답=1, 오답=0) 형태로 순서대로 쌓아둔다.
+// "최근 N회 정답률"과 "전체 정답률" 계산에 함께 쓰인다.
+function WORD_STATS_KEY(){ return deckScopedKey('vocabBench.wordStats.v1', CURRENT_DECK_ID); }
+function loadWordStats(){
+  try{
+    const raw = localStorage.getItem(WORD_STATS_KEY());
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+function saveWordStats(obj){
+  localStorage.setItem(WORD_STATS_KEY(), JSON.stringify(obj));
+}
+function recordWordAnswer(word, isCorrect){
+  const stats = loadWordStats();
+  const key = word.toLowerCase();
+  if(!stats[key]) stats[key] = [];
+  stats[key].push(isCorrect ? 1 : 0);
+  // 이력이 너무 길어지지 않도록 최근 200회까지만 보관
+  if(stats[key].length > 200) stats[key] = stats[key].slice(-200);
+  saveWordStats(stats);
+}
+// history: 해당 단어의 [1,0,1,...] 배열. n이 주어지면 최근 n개만, 없으면 전체 기준.
+function accuracyOf(history, n){
+  if(!history || history.length===0) return null; // 시도 기록 자체가 없음
+  const slice = n ? history.slice(-n) : history;
+  if(slice.length===0) return null;
+  const correct = slice.reduce((a,b)=>a+b, 0);
+  return Math.round((correct / slice.length) * 1000) / 10;
+}
+function attemptsCountOf(history){
+  return history ? history.length : 0;
+}
+
 function resetTestSetup(){
   const setupEl = document.getElementById('testSetup');
   const emptyEl = document.getElementById('testEmptyState');
@@ -1646,6 +1754,7 @@ function resetTestSetup(){
   document.getElementById('rangeFrom').value = 1;
   document.getElementById('rangeTo').value = WORDS.length;
   document.getElementById('rangeErr').textContent = '';
+  updateAccuracyHint();
 
   // 모드 탭 리스너 (한 번만 바인딩)
   const tabs = document.getElementById('rangeModeTabs');
@@ -1658,10 +1767,51 @@ function resetTestSetup(){
         b.classList.add('mode-sel');
         document.getElementById('modeCount').style.display = testMode==='count' ? 'block':'none';
         document.getElementById('modeRange').style.display = testMode==='range' ? 'block':'none';
+        document.getElementById('modeAccuracy').style.display = testMode==='accuracy' ? 'block':'none';
         document.getElementById('rangeErr').textContent = '';
+        if(testMode==='accuracy') updateAccuracyHint();
       });
     });
+
+    // 정답률 모드의 입력값이 바뀔 때마다 "몇 개가 해당하는지" 힌트를 갱신
+    ['accRecentN','accThreshold'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', updateAccuracyHint);
+    });
+    document.querySelectorAll('input[name=accScope]').forEach(r=>{
+      r.addEventListener('change', updateAccuracyHint);
+    });
   }
+}
+
+// 정답률 조건에 맞는 단어들을 골라낸다.
+function getWordsByAccuracyFilter(){
+  const scope = document.querySelector('input[name=accScope]:checked').value; // 'recentN' | 'all'
+  const threshold = parseInt(document.getElementById('accThreshold').value, 10);
+  const recentN = parseInt(document.getElementById('accRecentN').value, 10);
+  const stats = loadWordStats();
+
+  if(isNaN(threshold)) return { pool: [], error: '정답률 기준(%)을 입력해주세요.' };
+  if(scope==='recentN' && (!recentN || recentN<1)) return { pool: [], error: '최근 시험 횟수를 1 이상으로 입력해주세요.' };
+
+  const pool = WORDS.filter(w=>{
+    const history = stats[w.word.toLowerCase()];
+    const acc = scope==='recentN' ? accuracyOf(history, recentN) : accuracyOf(history, null);
+    if(acc === null) return true; // 시도 기록이 아예 없는 단어는 "아직 정답률 모름" -> 대상에 포함시켜 계속 노출
+    return acc <= threshold;
+  });
+
+  return { pool, error: null };
+}
+
+function updateAccuracyHint(){
+  const hintEl = document.getElementById('accHint');
+  if(!hintEl) return;
+  const { pool, error } = getWordsByAccuracyFilter();
+  if(error){
+    hintEl.textContent = '';
+    return;
+  }
+  hintEl.textContent = `조건에 맞는 단어: ${pool.length}개 (시도 기록이 없는 단어는 항상 포함됩니다)`;
 }
 
 document.getElementById('startTestBtn').addEventListener('click', ()=>{
@@ -1681,6 +1831,17 @@ document.getElementById('startTestBtn').addEventListener('click', ()=>{
     let pool = WORDS.slice(from-1, to);
     if(orderShuffle) pool = shuffle(pool);
     startQuiz(pool);
+  }else if(testMode === 'accuracy'){
+    const { pool, error } = getWordsByAccuracyFilter();
+    if(error){
+      document.getElementById('rangeErr').textContent = error;
+      return;
+    }
+    if(pool.length===0){
+      document.getElementById('rangeErr').textContent = '조건에 맞는 단어가 없습니다.';
+      return;
+    }
+    startQuiz(shuffle(pool));
   }else{
     const n = parseInt(document.getElementById('countSelect').dataset.selected || '10', 10);
     startQuiz(shuffle(WORDS).slice(0, n));
@@ -1792,6 +1953,8 @@ function checkAnswer(skip){
   const userVal = skip ? '' : normalize(input.value);
   const acceptable = splitMeanings(cur.meaning);
   const isCorrect = !skip && userVal.length>0 && acceptable.includes(userVal);
+
+  recordWordAnswer(cur.word, isCorrect);
 
   const fb = document.getElementById('quizFeedback');
   if(isCorrect){
