@@ -677,41 +677,143 @@
     min-height:16px;
   }
 
-  .acc-scope-row{
+  .acc-scope-cards{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:22px;
     text-align:left;
-    font-size:13.5px;
-    margin-bottom:10px;
-    color:var(--ink);
   }
-  .acc-scope-row label{
+  .acc-scope-card{
+    display:block;
+    position:relative;
+    border:1.5px solid var(--line);
+    border-radius:11px;
+    padding:13px 14px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .acc-scope-card input[type=radio]{
+    position:absolute;
+    opacity:0;
+    pointer-events:none;
+  }
+  .acc-scope-card:has(input:checked){
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .acc-scope-card.checked{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .acc-scope-card-title{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:2px;
+  }
+  .acc-scope-card-sub{
+    font-size:12.5px;
+    color:var(--muted);
     display:flex;
     align-items:center;
     gap:6px;
+    flex-wrap:wrap;
+  }
+  .stepper{
+    display:inline-flex;
+    align-items:center;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .stepper-btn{
+    appearance:none;
+    border:none;
+    background:none;
+    width:26px;
+    height:26px;
+    font-size:15px;
+    line-height:1;
+    color:var(--ink);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .stepper-btn:active{background:var(--line);}
+  .stepper input[type=number]{
+    width:32px;
+    border:none;
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+    text-align:center;
+    font-size:12.5px;
+    font-family:inherit;
+    padding:5px 0;
+    -moz-appearance:textfield;
+  }
+  .stepper input[type=number]::-webkit-outer-spin-button,
+  .stepper input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+
+  .acc-threshold-block{
+    text-align:left;
+    margin-bottom:8px;
+  }
+  .acc-threshold-label{
+    font-size:13.5px;
+    color:var(--ink);
+    margin-bottom:12px;
+  }
+  .acc-threshold-label b{
+    color:var(--accent);
+    font-size:16px;
+  }
+  .acc-slider{
+    width:100%;
+    appearance:none;
+    -webkit-appearance:none;
+    height:5px;
+    border-radius:999px;
+    background:var(--line);
+    outline:none;
+    margin:0;
+  }
+  .acc-slider::-webkit-slider-thumb{
+    appearance:none;
+    -webkit-appearance:none;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:var(--accent);
+    border:3px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
     cursor:pointer;
   }
-  .acc-threshold-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:13.5px;
-    margin:14px 0 10px;
-    color:var(--ink);
+  .acc-slider::-moz-range-thumb{
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:var(--accent);
+    border:3px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    cursor:pointer;
   }
-  .acc-inline-input{
-    width:56px;
-    padding:6px 8px;
-    border:1px solid var(--line);
-    border-radius:7px;
-    font-size:13.5px;
-    font-family:inherit;
-    text-align:center;
+  .acc-slider-scale{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
   }
   .acc-hint{
     font-size:12px;
     color:var(--muted);
-    margin-bottom:16px;
-    min-height:16px;
+    margin:16px 0 4px;
     line-height:1.5;
+    text-align:left;
   }
 
   .quiz-card{
@@ -962,17 +1064,37 @@
       </div>
 
       <div id="modeAccuracy" style="display:none;">
-        <div class="acc-scope-row">
-          <label><input type="radio" name="accScope" value="recentN" checked> 최근 <input type="number" id="accRecentN" min="1" value="3" class="acc-inline-input"> 회 시험 기준</label>
+        <div class="acc-scope-cards">
+          <label class="acc-scope-card" data-scope-card="recentN">
+            <input type="radio" name="accScope" value="recentN" checked>
+            <div class="acc-scope-card-body">
+              <div class="acc-scope-card-title">최근 시험 기준</div>
+              <div class="acc-scope-card-sub">
+                최근
+                <span class="stepper" data-stepper="accRecentN">
+                  <button type="button" class="stepper-btn" data-step="-1">−</button>
+                  <input type="number" id="accRecentN" min="1" max="99" value="3">
+                  <button type="button" class="stepper-btn" data-step="1">+</button>
+                </span>
+                회
+              </div>
+            </div>
+          </label>
+          <label class="acc-scope-card" data-scope-card="all">
+            <input type="radio" name="accScope" value="all">
+            <div class="acc-scope-card-body">
+              <div class="acc-scope-card-title">전체 기록 기준</div>
+              <div class="acc-scope-card-sub">시험 횟수 상관없이 누적으로</div>
+            </div>
+          </label>
         </div>
-        <div class="acc-scope-row">
-          <label><input type="radio" name="accScope" value="all"> 시험 횟수 상관없이 전체 기록 기준</label>
+
+        <div class="acc-threshold-block">
+          <div class="acc-threshold-label">정답률 <b id="accThresholdVal">50</b>% 이하인 단어만</div>
+          <input type="range" id="accThreshold" min="0" max="100" step="5" value="50" class="acc-slider">
+          <div class="acc-slider-scale"><span>0%</span><span>50%</span><span>100%</span></div>
         </div>
-        <div class="acc-threshold-row">
-          <span>정답률</span>
-          <input type="number" id="accThreshold" min="0" max="100" value="50" class="acc-inline-input">
-          <span>% 이하인 단어만</span>
-        </div>
+
         <div class="acc-hint" id="accHint"></div>
       </div>
 
@@ -1774,13 +1896,51 @@ function resetTestSetup(){
     });
 
     // 정답률 모드의 입력값이 바뀔 때마다 "몇 개가 해당하는지" 힌트를 갱신
-    ['accRecentN','accThreshold'].forEach(id=>{
-      document.getElementById(id).addEventListener('input', updateAccuracyHint);
-    });
+    document.getElementById('accRecentN').addEventListener('input', updateAccuracyHint);
     document.querySelectorAll('input[name=accScope]').forEach(r=>{
-      r.addEventListener('change', updateAccuracyHint);
+      r.addEventListener('change', ()=>{
+        updateAccScopeCardStyle();
+        updateAccuracyHint();
+      });
     });
+
+    // +/- 스텝퍼 버튼 (최근 N회)
+    document.querySelectorAll('.stepper-btn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const wrap = btn.closest('.stepper');
+        const input = wrap.querySelector('input[type=number]');
+        const step = parseInt(btn.dataset.step, 10);
+        const min = parseInt(input.min || '1', 10);
+        const max = parseInt(input.max || '99', 10);
+        let v = (parseInt(input.value, 10) || min) + step;
+        v = Math.max(min, Math.min(max, v));
+        input.value = v;
+        // 스텝퍼를 조작하면 자연스럽게 "최근 N회" 카드가 선택되게 한다.
+        document.querySelector('input[name=accScope][value=recentN]').checked = true;
+        updateAccScopeCardStyle();
+        updateAccuracyHint();
+      });
+    });
+
+    // 정답률 슬라이더 값 표시
+    const thresholdSlider = document.getElementById('accThreshold');
+    thresholdSlider.addEventListener('input', ()=>{
+      document.getElementById('accThresholdVal').textContent = thresholdSlider.value;
+      updateAccuracyHint();
+    });
+
+    updateAccScopeCardStyle();
   }
+}
+
+// 라디오 상태에 맞춰 카드 강조 클래스를 갱신 (:has() 미지원 브라우저 대비 이중 안전장치)
+function updateAccScopeCardStyle(){
+  document.querySelectorAll('.acc-scope-card').forEach(card=>{
+    const radio = card.querySelector('input[type=radio]');
+    card.classList.toggle('checked', radio.checked);
+  });
 }
 
 // 정답률 조건에 맞는 단어들을 골라낸다.
