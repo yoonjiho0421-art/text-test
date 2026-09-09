@@ -720,6 +720,9 @@
     font-size:12.5px;
     font-family:inherit;
     cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:none;
   }
   .test-group-buttons button.sel{
     border-color:var(--accent);
@@ -1441,7 +1444,10 @@ function openDeck(deckId, opts){
   document.getElementById('panel-deckapp').classList.add('active');
 
   loadDeckData();
+  testSetupInitialized = false;
+  quizState = null;
   renderStats();
+  resetTestSetup(true);
   renderWordList('');
   // 항상 "단어 관리" 탭을 기본으로 보여준다.
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
@@ -1510,6 +1516,7 @@ function loadDeckData(){
   IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
   GROUP_SIZE = loadGroupSize();
   openGroups.clear();
+  wordStatsCache = null;
 
   // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
   if(IS_FIRST_RUN){
@@ -1539,7 +1546,13 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab==='test') resetTestSetup();
+    if(btn.dataset.tab==='test') {
+      resetTestSetup();
+      // 관리 탭을 다녀온 뒤에는 테스트 설정 화면으로 돌아오되, 설정값은 유지한다.
+      document.getElementById('quizArea').style.display='none';
+      document.getElementById('resultArea').style.display='none';
+      document.getElementById('testSetup').style.display=WORDS.length ? 'block' : 'none';
+    }
     if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
   });
 });
@@ -1608,7 +1621,7 @@ function renderWordList(filter){
     document.getElementById('searchTestCount').textContent = `검색된 단어 ${filtered.length}개`;
     document.getElementById('searchTestBtn').onclick = ()=>{
       document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(shuffle(filtered));
+      startQuiz(shuffle(filtered), null, {type:'custom', items:filtered.map(w=>w.word)});
     };
 
     listEl.innerHTML = filtered.map((w)=> renderWordItemHtml(w, WORDS.indexOf(w))).join('');
@@ -1692,7 +1705,7 @@ function renderWordList(filter){
       const g = groups[gi];
       const gKey = groupKeyOf(GROUP_SIZE, g.from, g.to, g.items);
       document.querySelector('nav.tabs button[data-tab="test"]').click();
-      startQuiz(shuffle(g.items), gKey);
+      startQuiz(shuffle(g.items), gKey, {type:'group', groupIndex:gi});
     });
   });
 }
@@ -1738,6 +1751,7 @@ document.getElementById('groupApplyBtn').addEventListener('click', ()=>{
   GROUP_SIZE = n;
   saveGroupSize(n);
   openGroups.clear();
+  wordStatsCache = null;
   renderWordList('');
 });
 
@@ -1747,6 +1761,7 @@ document.getElementById('clearAllBtn').addEventListener('click', ()=>{
     WORDS = [];
     saveWords(WORDS);
     openGroups.clear();
+  wordStatsCache = null;
     renderWordList('');
   }
 });
@@ -1903,15 +1918,20 @@ function isGroupCleared(key){
 // 각 단어(소문자 기준)마다 시도 이력을 [1,0,1,1,...] (정답=1, 오답=0) 형태로 순서대로 쌓아둔다.
 // "최근 N회 정답률"과 "전체 정답률" 계산에 함께 쓰인다.
 function WORD_STATS_KEY(){ return deckScopedKey('vocabBench.wordStats.v1', CURRENT_DECK_ID); }
+let wordStatsCache = null;
 function loadWordStats(){
+  if(wordStatsCache) return wordStatsCache;
   try{
     const raw = localStorage.getItem(WORD_STATS_KEY());
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return {};
+    wordStatsCache = raw ? JSON.parse(raw) : {};
+  }catch(e){
+    wordStatsCache = {};
+  }
+  return wordStatsCache;
 }
 function saveWordStats(obj){
-  localStorage.setItem(WORD_STATS_KEY(), JSON.stringify(obj));
+  wordStatsCache = obj;
+  try{ localStorage.setItem(WORD_STATS_KEY(), JSON.stringify(obj)); }catch(e){}
 }
 function recordWordAnswer(word, isCorrect){
   const stats = loadWordStats();
@@ -1934,36 +1954,252 @@ function attemptsCountOf(history){
   return history ? history.length : 0;
 }
 
+const TEST_SETTINGS_KEY_BASE = 'vocabBench.testSettings.v2';
+let testSetupInitialized = false;
+let testSettings = null;
+
+function TEST_SETTINGS_KEY(){ return deckScopedKey(TEST_SETTINGS_KEY_BASE, CURRENT_DECK_ID); }
+function defaultTestSettings(){
+  return {
+    mode: 'count',
+    count: 10,
+    accuracyRangeType: 'group',
+    selectedGroups: ['all'],
+    rangeFrom: 1,
+    rangeTo: Math.max(1, WORDS.length),
+    accScope: 'recentN',
+    recentN: 3,
+    threshold: 50
+  };
+}
+function loadTestSettings(){
+  const d = defaultTestSettings();
+  try{
+    const raw = localStorage.getItem(TEST_SETTINGS_KEY());
+    if(raw) return Object.assign(d, JSON.parse(raw));
+  }catch(e){}
+  return d;
+}
+function saveTestSettings(){
+  if(!testSettings || !CURRENT_DECK_ID) return;
+  try{ localStorage.setItem(TEST_SETTINGS_KEY(), JSON.stringify(testSettings)); }catch(e){}
+}
+function syncTestSettingsFromUI(){
+  if(!testSettings) return;
+  testSettings.mode = testMode;
+  const countSelect = document.getElementById('countSelect');
+  if(countSelect?.dataset.selected) testSettings.count = parseInt(countSelect.dataset.selected,10) || 10;
+  const rangeType = document.querySelector('#accuracyRangeTabs button.sel')?.dataset.rangeType;
+  if(rangeType) testSettings.accuracyRangeType = rangeType;
+  const groupEl = document.getElementById('accuracyGroupButtons');
+  if(groupEl){
+    const selected = [...groupEl.querySelectorAll('button.sel')].map(b=>b.dataset.group);
+    testSettings.selectedGroups = selected.length ? selected : ['all'];
+  }
+  const from = parseInt(document.getElementById('rangeFrom')?.value,10);
+  const to = parseInt(document.getElementById('rangeTo')?.value,10);
+  if(Number.isFinite(from)) testSettings.rangeFrom = from;
+  if(Number.isFinite(to)) testSettings.rangeTo = to;
+  const scope = document.querySelector('input[name=accScope]:checked')?.value;
+  if(scope) testSettings.accScope = scope;
+  const recentN = parseInt(document.getElementById('accRecentN')?.value,10);
+  if(Number.isFinite(recentN)) testSettings.recentN = recentN;
+  const threshold = parseInt(document.getElementById('accThreshold')?.value,10);
+  if(Number.isFinite(threshold)) testSettings.threshold = threshold;
+  saveTestSettings();
+}
+function applyTestSettingsToUI(){
+  if(!testSettings) return;
+  testMode = testSettings.mode === 'accuracy' ? 'accuracy' : 'count';
+  const tabs = document.getElementById('rangeModeTabs');
+  tabs?.querySelectorAll('button').forEach(b=>b.classList.toggle('mode-sel', b.dataset.mode===testMode));
+  document.getElementById('modeCount').style.display = testMode==='count' ? 'block':'none';
+  document.getElementById('modeAccuracy').style.display = testMode==='accuracy' ? 'block':'none';
+
+  const countSelect = document.getElementById('countSelect');
+  if(countSelect){
+    const exists = [...countSelect.querySelectorAll('button')].some(b=>parseInt(b.dataset.n,10)===testSettings.count);
+    const n = exists ? testSettings.count : parseInt(countSelect.querySelector('button')?.dataset.n || '10',10);
+    countSelect.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', parseInt(b.dataset.n,10)===n));
+    countSelect.dataset.selected = n;
+    testSettings.count = n;
+  }
+
+  const rt = document.getElementById('accuracyRangeTabs');
+  const rangeType = testSettings.accuracyRangeType === 'number' ? 'number' : 'group';
+  rt?.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', b.dataset.rangeType===rangeType));
+  document.getElementById('accuracyGroupPanel').style.display = rangeType==='group' ? 'block':'none';
+  document.getElementById('accuracyNumberPanel').style.display = rangeType==='number' ? 'block':'none';
+  document.getElementById('rangeFrom').value = Math.max(1, Math.min(WORDS.length, testSettings.rangeFrom || 1));
+  document.getElementById('rangeTo').value = Math.max(1, Math.min(WORDS.length, testSettings.rangeTo || WORDS.length));
+
+  const groupEl = document.getElementById('accuracyGroupButtons');
+  if(groupEl){
+    const wanted = new Set(testSettings.selectedGroups || ['all']);
+    const valid = [...groupEl.querySelectorAll('button')].map(b=>b.dataset.group);
+    const chosen = wanted.has('all') ? ['all'] : valid.filter(k=>k!=='all' && wanted.has(k));
+    groupEl.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', chosen.includes(b.dataset.group)));
+    if(!groupEl.querySelector('button.sel')) groupEl.querySelector('[data-group="all"]')?.classList.add('sel');
+    updateAccuracyGroupSelected();
+  }
+
+  const scopeRadio = document.querySelector(`input[name=accScope][value="${testSettings.accScope==='all'?'all':'recentN'}"]`);
+  if(scopeRadio) scopeRadio.checked = true;
+  document.getElementById('accRecentN').value = Math.max(1, Math.min(99, testSettings.recentN || 3));
+  document.getElementById('accThreshold').value = Math.max(0, Math.min(100, testSettings.threshold ?? 50));
+  document.getElementById('accThresholdVal').textContent = document.getElementById('accThreshold').value;
+  updateAccScopeCardStyle();
+}
+function getSelectedAccuracyGroups(){
+  const el = document.getElementById('accuracyGroupButtons');
+  if(!el) return ['all'];
+  const selected = [...el.querySelectorAll('button.sel')].map(b=>b.dataset.group);
+  return selected.length ? selected : ['all'];
+}
+function bindAccuracyGroupDrag(){
+  const el = document.getElementById('accuracyGroupButtons');
+  if(!el || el.dataset.dragBound) return;
+  el.dataset.dragBound = '1';
+
+  let dragging = false;
+  let startIndex = -1;
+  let moved = false;
+
+  const groupButtons = () => [...el.querySelectorAll('button[data-group]:not([data-group="all"])')];
+  const buttonAtPoint = (x, y) => {
+    const target = document.elementFromPoint(x, y);
+    const btn = target?.closest?.('button[data-group]:not([data-group="all"])');
+    return btn && el.contains(btn) ? btn : null;
+  };
+  const applyRange = (a, b) => {
+    const buttons = groupButtons();
+    if(a<0 || b<0 || a>=buttons.length || b>=buttons.length) return;
+    const lo=Math.min(a,b), hi=Math.max(a,b);
+    buttons.forEach((btn,i)=>btn.classList.toggle('sel', i>=lo && i<=hi));
+    el.querySelector('[data-group="all"]')?.classList.remove('sel');
+    syncAccuracyGroupRange();
+    document.getElementById('rangeErr').textContent='';
+    updateAccuracyHint();
+  };
+
+  el.addEventListener('pointerdown', e=>{
+    const btn=e.target.closest?.('button[data-group]:not([data-group="all"])');
+    if(!btn) return;
+    dragging=true;
+    moved=false;
+    startIndex=groupButtons().indexOf(btn);
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+  });
+
+  el.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const btn=buttonAtPoint(e.clientX,e.clientY);
+    if(!btn) return;
+    const idx=groupButtons().indexOf(btn);
+    if(idx<0) return;
+    if(idx!==startIndex) moved=true;
+    if(moved) applyRange(startIndex,idx);
+  });
+
+  const end=()=>{
+    dragging=false;
+    startIndex=-1;
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  el.addEventListener('lostpointercapture', end);
+
+  el.addEventListener('click', e=>{
+    if(moved){
+      e.preventDefault();
+      e.stopPropagation();
+      moved=false;
+      return;
+    }
+    const btn=e.target.closest?.('button[data-group]');
+    if(!btn) return;
+    const key=btn.dataset.group;
+    if(key==='all'){
+      el.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+      btn.classList.add('sel');
+    }else{
+      el.querySelector('[data-group="all"]')?.classList.remove('sel');
+      btn.classList.toggle('sel');
+      if(!el.querySelector('button.sel')) el.querySelector('[data-group="all"]')?.classList.add('sel');
+    }
+    syncAccuracyGroupRange();
+    document.getElementById('rangeErr').textContent='';
+    updateAccuracyHint();
+  });
+}
+function getCurrentTestCondition(){
+  syncTestSettingsFromUI();
+  if(testMode==='accuracy'){
+    return {
+      type:'accuracy',
+      rangeType:testSettings.accuracyRangeType,
+      groups:[...(testSettings.selectedGroups || ['all'])],
+      from:testSettings.rangeFrom,
+      to:testSettings.rangeTo,
+      scope:testSettings.accScope,
+      recentN:testSettings.recentN,
+      threshold:testSettings.threshold
+    };
+  }
+  return {type:'count', count:testSettings.count};
+}
+function buildPoolFromCondition(condition){
+  if(condition.type==='group'){
+    const groups=buildGroups(GROUP_SIZE);
+    const g=groups[parseInt(condition.groupIndex,10)];
+    return g ? {pool:g.items.slice(),error:null} : {pool:[],error:'그룹을 찾을 수 없습니다.'};
+  }
+  if(condition.type==='custom'){
+    const set=new Set(condition.items || []);
+    return {pool:WORDS.filter(w=>set.has(w.word)),error:null};
+  }
+  if(condition.type==='accuracy'){
+    const rangeType=condition.rangeType || 'group';
+    let rangePool;
+    if(rangeType==='group'){
+      const selected=condition.groups?.length ? condition.groups : ['all'];
+      if(selected.includes('all')) rangePool=WORDS.slice();
+      else{
+        const groups=buildGroups(GROUP_SIZE);
+        const indexes=new Set(selected.map(i=>parseInt(i,10)).filter(Number.isFinite));
+        rangePool=groups.filter((g,i)=>indexes.has(i)).flatMap(g=>g.items);
+      }
+    }else{
+      const from=parseInt(condition.from,10), to=parseInt(condition.to,10);
+      if(!from || !to || from<1 || to<1 || from>WORDS.length || to>WORDS.length || from>to) return {pool:[],error:'정답률 테스트의 번호 범위를 확인해주세요.'};
+      rangePool=WORDS.slice(from-1,to);
+    }
+    const stats=loadWordStats();
+    const pool=rangePool.filter(w=>{
+      const h=stats[w.word.toLowerCase()];
+      const acc=condition.scope==='recentN' ? accuracyOf(h,condition.recentN) : accuracyOf(h,null);
+      return acc===null || acc<=condition.threshold;
+    });
+    return {pool,error:null};
+  }
+  const n=Math.max(1,Math.min(WORDS.length,parseInt(condition.count,10)||10));
+  return {pool:WORDS.length <= n ? WORDS.slice() : shuffle(WORDS).slice(0,n),error:null};
+}
+
 function renderTestGroupButtons(){
   const accuracyEl = document.getElementById('accuracyGroupButtons');
   const groups = buildGroups(GROUP_SIZE);
   if(!accuracyEl) return;
-
+  const wanted = new Set(testSettings?.selectedGroups || ['all']);
+  const useAll = wanted.has('all');
   accuracyEl.innerHTML = [
-    `<button type="button" data-group="all" class="sel">전체</button>`,
+    `<button type="button" data-group="all" class="${useAll?'sel':''}">전체</button>`,
     ...groups.map((g,i)=>
-      `<button type="button" data-group="${i}">${i+1}그룹 <span>(${g.from}~${g.to})</span></button>`
+      `<button type="button" data-group="${i}" class="${!useAll && wanted.has(String(i))?'sel':''}">${i+1}그룹</button>`
     )
   ].join('');
-
-  accuracyEl.querySelectorAll('button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const key = btn.dataset.group;
-      if(key === 'all'){
-        accuracyEl.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
-        btn.classList.add('sel');
-      }else{
-        accuracyEl.querySelector('[data-group="all"]').classList.remove('sel');
-        btn.classList.toggle('sel');
-        if(!accuracyEl.querySelector('button.sel')){
-          accuracyEl.querySelector('[data-group="all"]').classList.add('sel');
-        }
-      }
-      syncAccuracyGroupRange();
-      document.getElementById('rangeErr').textContent = '';
-      updateAccuracyHint();
-    });
-  });
+  if(!accuracyEl.querySelector('button.sel')) accuracyEl.querySelector('[data-group="all"]')?.classList.add('sel');
+  bindAccuracyGroupDrag();
   updateAccuracyGroupSelected();
 }
 
@@ -1993,119 +2229,105 @@ function syncAccuracyGroupRange(){
     document.getElementById('rangeTo').value = Math.max(...picked.map(g=>g.to));
   }
   updateAccuracyGroupSelected();
+  if(testSettings){
+    testSettings.selectedGroups = getSelectedAccuracyGroups();
+    testSettings.rangeFrom = parseInt(document.getElementById('rangeFrom').value,10) || 1;
+    testSettings.rangeTo = parseInt(document.getElementById('rangeTo').value,10) || WORDS.length;
+    saveTestSettings();
+  }
 }
 
-function resetTestSetup(){
+function resetTestSetup(force=false){
   const setupEl = document.getElementById('testSetup');
   const emptyEl = document.getElementById('testEmptyState');
-  document.getElementById('quizArea').style.display = 'none';
-  document.getElementById('resultArea').style.display = 'none';
-
   if(WORDS.length===0){
-    setupEl.style.display = 'none';
-    emptyEl.style.display = 'block';
+    setupEl.style.display='none';
+    emptyEl.style.display='block';
+    testSetupInitialized=false;
     return;
   }
-  emptyEl.style.display = 'none';
-  setupEl.style.display = 'block';
+  emptyEl.style.display='none';
+  if(force || !testSetupInitialized){
+    testSettings = loadTestSettings();
+    testSettings.rangeFrom = Math.max(1, Math.min(WORDS.length, testSettings.rangeFrom || 1));
+    testSettings.rangeTo = Math.max(1, Math.min(WORDS.length, testSettings.rangeTo || WORDS.length));
+    const maxN=Math.max(1, WORDS.length);
+    if(!Number.isFinite(testSettings.count) || testSettings.count<1) testSettings.count=10;
+    testSettings.count=Math.min(testSettings.count,maxN);
+    testMode=testSettings.mode==='accuracy'?'accuracy':'count';
 
-  const countSelect = document.getElementById('countSelect');
-  const options = [10,20,30,50, WORDS.length];
-  const finalOptions = [...new Set(options.filter(n=>n<=WORDS.length))];
-  if(finalOptions[finalOptions.length-1] !== WORDS.length) finalOptions.push(WORDS.length);
-
-  countSelect.innerHTML = finalOptions.map((n,i)=>
-    `<button data-n="${n}" class="${i===0?'sel':''}">${n===WORDS.length? '전체 '+n : n}문제</button>`
-  ).join('');
-  countSelect.dataset.selected = finalOptions[0];
-
-  countSelect.querySelectorAll('button').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    const countSelect=document.getElementById('countSelect');
+    const options=[10,20,30,50,WORDS.length];
+    const finalOptions=[...new Set(options.filter(n=>n<=WORDS.length))];
+    if(!finalOptions.length) finalOptions.push(WORDS.length);
+    countSelect.innerHTML=finalOptions.map(n=>`<button data-n="${n}" class="">${n===WORDS.length?'전체 '+n:n}문제</button>`).join('');
+    countSelect.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
       countSelect.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
       b.classList.add('sel');
-      countSelect.dataset.selected = b.dataset.n;
-    });
-  });
+      countSelect.dataset.selected=b.dataset.n;
+      testSettings.count=parseInt(b.dataset.n,10);
+      saveTestSettings();
+    }));
 
-  document.getElementById('rangeMaxHint').textContent = `등록된 단어: 1 ~ ${WORDS.length}번`;
-  document.getElementById('rangeFrom').value = 1;
-  document.getElementById('rangeTo').value = WORDS.length;
-  document.getElementById('rangeErr').textContent = '';
-  renderTestGroupButtons();
-  updateAccuracyHint();
+    document.getElementById('rangeMaxHint').textContent=`등록된 단어: 1 ~ ${WORDS.length}번`;
+    document.getElementById('rangeFrom').value=testSettings.rangeFrom;
+    document.getElementById('rangeTo').value=testSettings.rangeTo;
+    document.getElementById('rangeFrom').oninput=()=>{syncTestSettingsFromUI();updateAccuracyHint();};
+    document.getElementById('rangeTo').oninput=()=>{syncTestSettingsFromUI();updateAccuracyHint();};
 
-  // 단어 수 / 그룹 선택 전환
-  // 정답률 범위 선택 방식: 그룹 / 번호 범위
-  const accuracyRangeTabs = document.getElementById('accuracyRangeTabs');
-  if(accuracyRangeTabs && !accuracyRangeTabs.dataset.bound){
-    accuracyRangeTabs.dataset.bound = '1';
-    accuracyRangeTabs.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click', ()=>{
+    renderTestGroupButtons();
+
+    const accuracyRangeTabs=document.getElementById('accuracyRangeTabs');
+    if(accuracyRangeTabs && !accuracyRangeTabs.dataset.bound){
+      accuracyRangeTabs.dataset.bound='1';
+      accuracyRangeTabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
         accuracyRangeTabs.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
         b.classList.add('sel');
-        const isGroup = b.dataset.rangeType === 'group';
-        document.getElementById('accuracyGroupPanel').style.display = isGroup ? 'block' : 'none';
-        document.getElementById('accuracyNumberPanel').style.display = isGroup ? 'none' : 'block';
-        document.getElementById('rangeErr').textContent = '';
+        testSettings.accuracyRangeType=b.dataset.rangeType;
+        saveTestSettings();
+        const isGroup=b.dataset.rangeType==='group';
+        document.getElementById('accuracyGroupPanel').style.display=isGroup?'block':'none';
+        document.getElementById('accuracyNumberPanel').style.display=isGroup?'none':'block';
+        document.getElementById('rangeErr').textContent='';
         updateAccuracyHint();
-      });
-    });
-  }
+      }));
+    }
 
-  // 모드 탭 리스너 (한 번만 바인딩)
-  const tabs = document.getElementById('rangeModeTabs');
-  if(!tabs.dataset.bound){
-    tabs.dataset.bound = '1';
-    tabs.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        testMode = b.dataset.mode;
+    const tabs=document.getElementById('rangeModeTabs');
+    if(!tabs.dataset.bound){
+      tabs.dataset.bound='1';
+      tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+        testMode=b.dataset.mode;
+        testSettings.mode=testMode;
+        saveTestSettings();
         tabs.querySelectorAll('button').forEach(x=>x.classList.remove('mode-sel'));
         b.classList.add('mode-sel');
-        document.getElementById('modeCount').style.display = testMode==='count' ? 'block':'none';
-        document.getElementById('modeAccuracy').style.display = testMode==='accuracy' ? 'block':'none';
-        document.getElementById('rangeErr').textContent = '';
+        document.getElementById('modeCount').style.display=testMode==='count'?'block':'none';
+        document.getElementById('modeAccuracy').style.display=testMode==='accuracy'?'block':'none';
+        document.getElementById('rangeErr').textContent='';
         if(testMode==='accuracy') updateAccuracyHint();
-      });
-    });
+      }));
 
-    // 정답률 모드의 입력값이 바뀔 때마다 "몇 개가 해당하는지" 힌트를 갱신
-    document.getElementById('accRecentN').addEventListener('input', updateAccuracyHint);
-    document.querySelectorAll('input[name=accScope]').forEach(r=>{
-      r.addEventListener('change', ()=>{
-        updateAccScopeCardStyle();
-        updateAccuracyHint();
-      });
-    });
-
-    // +/- 스텝퍼 버튼 (최근 N회)
-    document.querySelectorAll('.stepper-btn').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        e.stopPropagation();
-        const wrap = btn.closest('.stepper');
-        const input = wrap.querySelector('input[type=number]');
-        const step = parseInt(btn.dataset.step, 10);
-        const min = parseInt(input.min || '1', 10);
-        const max = parseInt(input.max || '99', 10);
-        let v = (parseInt(input.value, 10) || min) + step;
-        v = Math.max(min, Math.min(max, v));
-        input.value = v;
-        // 스텝퍼를 조작하면 자연스럽게 "최근 N회" 카드가 선택되게 한다.
-        document.querySelector('input[name=accScope][value=recentN]').checked = true;
-        updateAccScopeCardStyle();
-        updateAccuracyHint();
-      });
-    });
-
-    // 정답률 슬라이더 값 표시
-    const thresholdSlider = document.getElementById('accThreshold');
-    thresholdSlider.addEventListener('input', ()=>{
-      document.getElementById('accThresholdVal').textContent = thresholdSlider.value;
-      updateAccuracyHint();
-    });
-
-    updateAccScopeCardStyle();
+      document.getElementById('accRecentN').addEventListener('input',()=>{syncTestSettingsFromUI();updateAccuracyHint();});
+      document.querySelectorAll('input[name=accScope]').forEach(r=>r.addEventListener('change',()=>{syncTestSettingsFromUI();updateAccScopeCardStyle();updateAccuracyHint();}));
+      document.querySelectorAll('.stepper-btn').forEach(btn=>btn.addEventListener('click',(e)=>{
+        e.preventDefault();e.stopPropagation();
+        const wrap=btn.closest('.stepper'), input=wrap.querySelector('input[type=number]');
+        const step=parseInt(btn.dataset.step,10), min=parseInt(input.min||'1',10), max=parseInt(input.max||'99',10);
+        let v=(parseInt(input.value,10)||min)+step; v=Math.max(min,Math.min(max,v)); input.value=v;
+        document.querySelector('input[name=accScope][value=recentN]').checked=true;
+        syncTestSettingsFromUI();updateAccScopeCardStyle();updateAccuracyHint();
+      }));
+      const thresholdSlider=document.getElementById('accThreshold');
+      thresholdSlider.addEventListener('input',()=>{document.getElementById('accThresholdVal').textContent=thresholdSlider.value;syncTestSettingsFromUI();updateAccuracyHint();});
+    }
+    testSetupInitialized=true;
+  }else{
+    // 단어 관리 탭을 다녀와도 설정은 유지하고, 현재 단어 수에 맞는 표시만 갱신한다.
+    document.getElementById('rangeMaxHint').textContent=`등록된 단어: 1 ~ ${WORDS.length}번`;
   }
+  applyTestSettingsToUI();
+  updateAccuracyHint();
 }
 
 // 라디오 상태에 맞춰 카드 강조 클래스를 갱신 (:has() 미지원 브라우저 대비 이중 안전장치)
@@ -2173,30 +2395,12 @@ function updateAccuracyHint(){
 }
 
 document.getElementById('startTestBtn').addEventListener('click', ()=>{
-  document.getElementById('rangeErr').textContent = '';
-  if(testMode === 'accuracy'){
-    const { pool, error } = getWordsByAccuracyFilter();
-    if(error){
-      document.getElementById('rangeErr').textContent = error;
-      return;
-    }
-    if(pool.length===0){
-      document.getElementById('rangeErr').textContent = '조건에 맞는 단어가 없습니다.';
-      return;
-    }
-    // 정답률 테스트는 항상 무작위 순서로 출제한다.
-    startQuiz(shuffle(pool));
-  }else{
-    const selectionType = document.querySelector('#selectionTypeTabs button.sel')?.dataset.selectType || 'count';
-    if(selectionType === 'group'){
-      const groups = getSelectedNormalGroups();
-      const pool = groups.flatMap(g=>g.items);
-      startQuiz(shuffle(pool));
-    }else{
-      const n = parseInt(document.getElementById('countSelect').dataset.selected || '10', 10);
-      startQuiz(shuffle(WORDS).slice(0, n));
-    }
-  }
+  document.getElementById('rangeErr').textContent='';
+  const condition=getCurrentTestCondition();
+  const result=buildPoolFromCondition(condition);
+  if(result.error){ document.getElementById('rangeErr').textContent=result.error; return; }
+  if(result.pool.length===0){ document.getElementById('rangeErr').textContent='조건에 맞는 단어가 없습니다.'; return; }
+  startQuiz(shuffle(result.pool), null, condition);
 });
 
 function shuffle(arr){
@@ -2208,7 +2412,7 @@ function shuffle(arr){
   return a;
 }
 
-function startQuiz(pool, groupKey){
+function startQuiz(pool, groupKey, condition){
   quizState = {
     items: pool,
     idx: 0,
@@ -2216,6 +2420,7 @@ function startQuiz(pool, groupKey){
     wrongList: [],
     answered: false,
     groupKey: groupKey || null,
+    condition: condition || null,
   };
   document.getElementById('testSetup').style.display = 'none';
   document.getElementById('resultArea').style.display = 'none';
@@ -2269,8 +2474,8 @@ function renderQuizStep(){
   input.focus();
   st.answered = false;
 
-  document.getElementById('quizSubmit').addEventListener('click', ()=> checkAnswer());
-  document.getElementById('quizSkip').addEventListener('click', ()=> checkAnswer(true));
+  document.getElementById('quizSubmit').onclick = () => checkAnswer();
+  document.getElementById('quizSkip').onclick = () => checkAnswer(true);
 }
 
 function normalize(s){
@@ -2322,7 +2527,6 @@ function checkAnswer(skip){
   }
   input.disabled = true;
   document.getElementById('quizSubmit').textContent = (st.idx < st.items.length-1) ? '다음' : '결과 보기';
-  document.getElementById('quizSubmit').removeEventListener('click', checkAnswer);
   document.getElementById('quizSubmit').onclick = nextStep;
   document.getElementById('quizSkip').style.display = 'none';
 }
@@ -2387,8 +2591,15 @@ function showResult(){
   `;
 
   document.getElementById('retryBtn').addEventListener('click', ()=>{
-    if(st.groupKey){
-      // 그룹 시험이었으면 같은 그룹 단어로 즉시 재시작 (groupKey 유지 → 이번에 통과하면 완료 처리)
+    if(st.condition){
+      const result=buildPoolFromCondition(st.condition);
+      if(result.error || result.pool.length===0){
+        resetTestSetup();
+        document.getElementById('rangeErr').textContent=result.error || '조건에 맞는 단어가 없습니다.';
+        return;
+      }
+      startQuiz(shuffle(result.pool), st.groupKey, st.condition);
+    }else if(st.groupKey){
       startQuiz(shuffle(st.items), st.groupKey);
     }else{
       resetTestSetup();
