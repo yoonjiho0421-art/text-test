@@ -1241,26 +1241,6 @@ function loadDeckData(){
   IS_FIRST_RUN = !localStorage.getItem(STORE_KEY());
   GROUP_SIZE = loadGroupSize();
   openGroups.clear();
-
-  // 이 단어장에 저장된 단어가 하나도 없는 첫 진입이면 words.xlsx를 자동으로 불러온다.
-  if(IS_FIRST_RUN){
-    fetch('./words.xlsx')
-      .then(res=>{
-        if(!res.ok) throw new Error('words.xlsx not found');
-        return res.arrayBuffer();
-      })
-      .then(buf=>{
-        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-        const { added } = parseWordsFromWorkbook(wb, WORDS);
-        if(added.length===0) return;
-        WORDS.push(...added);
-        saveWords(WORDS);
-        renderWordList(document.getElementById('searchBox').value);
-      })
-      .catch(()=>{
-        // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
-      });
-  }
 }
 
 /* ---------- Tabs ---------- */
