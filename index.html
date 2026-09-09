@@ -182,6 +182,63 @@
     line-height:1.7;
   }
 
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(28,27,26,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .modal-card{
+    background:var(--card);
+    border-radius:14px;
+    padding:22px;
+    width:100%;
+    max-width:340px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.2);
+  }
+  .modal-card h3{
+    margin:0 0 14px;
+    font-size:16px;
+  }
+  .modal-card p{
+    margin:0 0 18px;
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.6;
+    white-space:pre-line;
+  }
+  .modal-card input[type=text]{
+    width:100%;
+    box-sizing:border-box;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-size:14px;
+    font-family:inherit;
+    margin-bottom:18px;
+  }
+  .modal-btns{
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .modal-btns button{
+    padding:9px 16px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+  }
+  .modal-btn-cancel{background:none; border:1px solid var(--line) !important; color:var(--muted);}
+  .modal-btn-confirm{background:var(--ink); color:#fff;}
+  .modal-btn-danger{background:var(--bad); color:#fff;}
+
   /* ---------- Deck app header ---------- */
   .deck-app-header{
     display:flex;
@@ -882,6 +939,30 @@
   </footer>
 </div>
 
+<!-- ===== 이름변경 모달 ===== -->
+<div class="modal-overlay" id="renameModalOverlay" style="display:none;">
+  <div class="modal-card">
+    <h3>단어장 이름 변경</h3>
+    <input type="text" id="renameModalInput" maxlength="40" placeholder="단어장 이름">
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" id="renameModalCancel">취소</button>
+      <button class="modal-btn-confirm" id="renameModalConfirm">변경</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 삭제 확인 모달 ===== -->
+<div class="modal-overlay" id="deleteModalOverlay" style="display:none;">
+  <div class="modal-card">
+    <h3>단어장 삭제</h3>
+    <p id="deleteModalText"></p>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" id="deleteModalCancel">취소</button>
+      <button class="modal-btn-danger" id="deleteModalConfirm">삭제</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =====================================================================
    Deck (단어장) system
@@ -972,12 +1053,7 @@ function renderDeckList(){
       e.stopPropagation();
       const id = btn.dataset.rename;
       const deck = DECKS.find(d=>d.id===id);
-      const newName = prompt('새 이름을 입력하세요.', deck ? deck.name : '');
-      if(newName && newName.trim()){
-        deck.name = newName.trim().slice(0,40);
-        saveDecks(DECKS);
-        renderDeckList();
-      }
+      openRenameModal(deck);
     });
   });
   el.querySelectorAll('[data-delete]').forEach(btn=>{
@@ -985,15 +1061,72 @@ function renderDeckList(){
       e.stopPropagation();
       const id = btn.dataset.delete;
       const deck = DECKS.find(d=>d.id===id);
-      if(!confirm(`"${deck ? deck.name : ''}" 단어장을 삭제할까요?\n단어, 그룹 설정, 완료 기록이 모두 함께 삭제되며 되돌릴 수 없습니다.`)) return;
-      ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
-        localStorage.removeItem(deckScopedKey(k, id));
-      });
-      DECKS = DECKS.filter(d=>d.id!==id);
-      saveDecks(DECKS);
-      renderDeckList();
+      openDeleteModal(deck);
     });
   });
+}
+
+/* ---------- Rename modal ---------- */
+function openRenameModal(deck){
+  if(!deck) return;
+  const overlay = document.getElementById('renameModalOverlay');
+  const input = document.getElementById('renameModalInput');
+  input.value = deck.name;
+  overlay.style.display = 'flex';
+  setTimeout(()=>{ input.focus(); input.select(); }, 30);
+
+  function close(){
+    overlay.style.display = 'none';
+    document.getElementById('renameModalConfirm').removeEventListener('click', onConfirm);
+    input.removeEventListener('keydown', onKeydown);
+  }
+  function onConfirm(){
+    const newName = input.value.trim();
+    if(newName){
+      deck.name = newName.slice(0,40);
+      saveDecks(DECKS);
+      renderDeckList();
+      if(CURRENT_DECK_ID === deck.id){
+        document.getElementById('deckAppTitle').textContent = deck.name;
+        document.getElementById('brandTitle').textContent = deck.name;
+      }
+    }
+    close();
+  }
+  function onKeydown(e){
+    if(e.key==='Enter') onConfirm();
+    if(e.key==='Escape') close();
+  }
+  document.getElementById('renameModalConfirm').addEventListener('click', onConfirm);
+  document.getElementById('renameModalCancel').onclick = close;
+  overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
+  input.addEventListener('keydown', onKeydown);
+}
+
+/* ---------- Delete modal ---------- */
+function openDeleteModal(deck){
+  if(!deck) return;
+  const overlay = document.getElementById('deleteModalOverlay');
+  document.getElementById('deleteModalText').textContent =
+    `"${deck.name}" 단어장을 삭제할까요?\n단어, 그룹 설정, 완료 기록이 모두 함께 삭제되며 되돌릴 수 없습니다.`;
+  overlay.style.display = 'flex';
+
+  function close(){
+    overlay.style.display = 'none';
+    document.getElementById('deleteModalConfirm').removeEventListener('click', onConfirm);
+  }
+  function onConfirm(){
+    ['vocabBench.words.v1','vocabBench.lastAccuracy.v1','vocabBench.groupSize.v1','vocabBench.groupResults.v2'].forEach(k=>{
+      localStorage.removeItem(deckScopedKey(k, deck.id));
+    });
+    DECKS = DECKS.filter(d=>d.id!==deck.id);
+    saveDecks(DECKS);
+    renderDeckList();
+    close();
+  }
+  document.getElementById('deleteModalConfirm').addEventListener('click', onConfirm);
+  document.getElementById('deleteModalCancel').onclick = close;
+  overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
 }
 
 function countWordsInDeck(deckId){
@@ -1026,7 +1159,8 @@ document.getElementById('backToHomeBtn').addEventListener('click', ()=>{
   closeDeck();
 });
 
-function openDeck(deckId){
+function openDeck(deckId, opts){
+  opts = opts || {};
   CURRENT_DECK_ID = deckId;
   setCurrentDeckId(deckId);
   const deck = DECKS.find(d=>d.id===deckId);
@@ -1045,9 +1179,16 @@ function openDeck(deckId){
   document.querySelector('nav.tabs button[data-tab="manage"]').classList.add('active');
   document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-manage').classList.add('active');
+
+  // 안드로이드 기기 뒤로가기 버튼 대응: 단어장에 들어올 때 히스토리를 하나 쌓아둬서,
+  // 뒤로가기를 누르면 앱이 바로 꺼지지 않고 단어장 목록(홈)으로 나가지도록 한다.
+  if(!opts.skipHistoryPush){
+    history.pushState({ vocabBenchView: 'deckapp' }, '');
+  }
 }
 
-function closeDeck(){
+function closeDeck(opts){
+  opts = opts || {};
   CURRENT_DECK_ID = null;
   setCurrentDeckId(null);
   document.getElementById('brandTitle').textContent = '단어 테스트장';
@@ -1055,7 +1196,22 @@ function closeDeck(){
   document.getElementById('panel-deckapp').classList.remove('active');
   document.getElementById('panel-deckhome').classList.add('active');
   renderDeckList();
+
+  // 뒤로가기 이벤트로 인해 호출된 경우가 아니면(= 화면의 버튼을 직접 눌러서 나온 경우),
+  // 아까 쌓아둔 히스토리 항목을 소비해서 이후 뒤로가기 동작이 꼬이지 않게 한다.
+  if(!opts.fromPopState && history.state && history.state.vocabBenchView === 'deckapp'){
+    history.back();
+  }
 }
+
+// 안드로이드 뒤로가기(또는 브라우저 뒤로가기) 대응
+window.addEventListener('popstate', (e)=>{
+  if(CURRENT_DECK_ID){
+    // 단어장 안에 있다가 뒤로가기 -> 홈 화면으로
+    closeDeck({ fromPopState: true });
+  }
+  // 이미 홈 화면이면 popstate가 와도 별도 처리 없음(브라우저 기본 동작에 맡김 = 앱 종료 등)
+});
 
 /* ---------- Storage (현재 열린 단어장 기준으로 동적 키 사용) ---------- */
 function STORE_KEY(){ return deckScopedKey('vocabBench.words.v1', CURRENT_DECK_ID); }
