@@ -2635,14 +2635,12 @@ function startMasterQuiz(pool, condition){
   quizState = {
     mode: 'master',
     queue,                 // 아직 슬롯에 들어가지 못한 대기 단어들 (순서대로)
-    active,                // 현재 화면에 떠 있는 단어들 (최대 windowSize개)
-    activeIdx: 0,          // active 배열 내에서 지금 보여줄 인덱스
+    active,                // 현재 화면에 떠 있는 단어들 (최대 windowSize개). 항상 active[0]을 출제한다.
     windowSize,
     threshold: condition.threshold,
     sessionStats: {},      // word(소문자) -> {correct, total} 이번 세션 한정 기록
     clearedCount: 0,
     totalUnique: pool.length,
-    wrongList: [],         // 결과 화면에 보여줄, 최종적으로 통과 전 마지막에 틀렸던 기록(중복 제거)
     answered: false,
   };
   document.getElementById('testSetup').style.display = 'none';
@@ -2657,19 +2655,24 @@ function masterSessionAccuracy(word){
   return (st.correct / st.total) * 100;
 }
 
-function renderMasterStep(){
+// 활성 슬롯(active)을 windowSize개까지 대기열(queue)에서 채운다.
+// active[0]이 항상 "지금 출제할 단어"가 된다.
+function fillMasterActive(){
   const st = quizState;
-  // active 슬롯이 비었는데 대기열에 아직 단어가 남아있으면 채운다 (안전장치)
   while(st.active.length < st.windowSize && st.queue.length > 0){
     st.active.push(st.queue.shift());
   }
+}
+
+function renderMasterStep(){
+  const st = quizState;
+  fillMasterActive();
   if(st.active.length===0){
     showMasterResult();
     return;
   }
-  if(st.activeIdx >= st.active.length) st.activeIdx = 0;
 
-  const cur = st.active[st.activeIdx];
+  const cur = st.active[0]; // 항상 맨 앞 단어를 출제
   const area = document.getElementById('quizArea');
   const remaining = st.totalUnique - st.clearedCount;
 
@@ -2699,7 +2702,7 @@ function checkMasterAnswer(skip){
   if(st.answered) return;
   st.answered = true;
 
-  const cur = st.active[st.activeIdx];
+  const cur = st.active[0]; // renderMasterStep에서 항상 active[0]을 출제했으므로 동일하게 참조
   const input = document.getElementById('quizInput');
   const userVal = skip ? '' : normalize(input.value);
   const acceptable = splitMeanings(cur.meaning);
@@ -2733,34 +2736,27 @@ function checkMasterAnswer(skip){
 
   input.disabled = true;
   document.getElementById('quizSubmit').textContent = '다음';
-  document.getElementById('quizSubmit').onclick = () => nextMasterStep(willClear, cur);
+  document.getElementById('quizSubmit').onclick = () => nextMasterStep(willClear);
   document.getElementById('quizSkip').style.display = 'none';
 }
 
-function nextMasterStep(willClear, cur){
+// 활성 슬롯은 항상 큐 앞부분(등록/재도전 순서)의 windowSize개를 그대로 보여주는
+// "창(window)"이다. 매 문제는 반드시 active[0]에서 꺼내 처리하고, 통과했으면
+// 그 자리를 비우고 큐에서 다음 단어를 뒤에 채운다. 통과하지 못했으면 그 단어를
+// 큐 맨 뒤로 보내고 역시 큐에서 다음 단어를 뒤에 채운다.
+// 이 방식이면 오답 단어는 정확히 "현재 대기 중인 단어 수만큼" 뒤에 다시 등장하며,
+// 활성 슬롯 크기(windowSize)가 항상 일정하게 유지된다.
+function nextMasterStep(willClear){
   const st = quizState;
+  const cur = st.active.shift(); // 방금 처리한 단어를 슬롯에서 제거
 
   if(willClear){
-    // 통과: 활성 슬롯에서 제거하고, 대기열에서 다음 단어를 채운다.
-    st.active.splice(st.activeIdx, 1);
     st.clearedCount++;
-    if(st.queue.length > 0){
-      // 방금 빠진 자리 쪽에 새 단어를 넣어 순서 감각을 유지
-      st.active.splice(Math.min(st.activeIdx, st.active.length), 0, st.queue.shift());
-    }
-    // activeIdx는 그대로 두면 방금 채워진(혹은 다음) 단어를 자연스럽게 가리킴
-    if(st.activeIdx >= st.active.length) st.activeIdx = 0;
   }else{
-    // 통과 실패(오답 또는 정답률 기준 미달): 대기열 맨 뒤로 보내고, 다음 슬롯으로 이동
-    st.active.splice(st.activeIdx, 1);
-    st.queue.push(cur);
-    if(st.queue.length > 0 && st.active.length < st.windowSize){
-      st.active.splice(Math.min(st.activeIdx, st.active.length), 0, st.queue.shift());
-    }
-    st.activeIdx++;
-    if(st.activeIdx >= st.active.length) st.activeIdx = 0;
+    st.queue.push(cur); // 대기열 맨 뒤로 보내 다시 등장하게 함
   }
 
+  fillMasterActive();
   renderMasterStep();
 }
 
