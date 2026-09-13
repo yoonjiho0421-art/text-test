@@ -903,6 +903,26 @@
     margin-top:6px;
     padding:0 10px;
   }
+  .acc-slider-scale.acc-slider-scale-dynamic{
+    position:relative;
+    height:14px;
+    display:block;
+  }
+  .acc-slider-scale.acc-slider-scale-dynamic span{
+    position:absolute;
+    transform:translateX(-50%);
+    white-space:nowrap;
+  }
+  .acc-slider-scale.acc-slider-scale-dynamic span:first-child{
+    transform:translateX(0);
+  }
+  .acc-slider-scale.acc-slider-scale-dynamic span:last-child{
+    transform:translateX(-100%);
+  }
+  .acc-slider-scale.acc-slider-scale-dynamic span.acc-slider-current{
+    color:var(--accent);
+    font-weight:700;
+  }
   .acc-hint{
     font-size:12px;
     color:var(--muted);
@@ -1192,7 +1212,9 @@
         <div class="acc-threshold-block">
           <div class="acc-threshold-label">정답률 <b id="accThresholdVal">50</b>% 이하인 단어만</div>
           <input type="range" id="accThreshold" min="0" max="100" step="5" value="50" class="acc-slider">
-          <div class="acc-slider-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="acc-slider-scale acc-slider-scale-dynamic" id="accThresholdScale">
+            <span>0%</span><span class="acc-slider-current" id="accThresholdMidLabel">50%</span><span>100%</span>
+          </div>
         </div>
 
         <div class="acc-hint" id="accHint"></div>
@@ -1210,12 +1232,16 @@
         <div class="acc-threshold-block">
           <div class="acc-threshold-label">한 번에 볼 단어 수 <b id="masterWindowLabel">10</b>개</div>
           <input type="range" id="masterWindowSize" min="3" max="20" step="1" value="10" class="acc-slider">
-          <div class="acc-slider-scale"><span>3</span><span>10</span><span>20</span></div>
+          <div class="acc-slider-scale acc-slider-scale-dynamic" id="masterWindowScale">
+            <span>3</span><span class="acc-slider-current" id="masterWindowMidLabel">10</span><span>20</span>
+          </div>
         </div>
         <div class="acc-threshold-block">
           <div class="acc-threshold-label">이번 시험 중 정답률 <b id="masterThresholdVal">50</b>% 초과 시 통과</div>
           <input type="range" id="masterThreshold" min="0" max="100" step="10" value="50" class="acc-slider">
-          <div class="acc-slider-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="acc-slider-scale acc-slider-scale-dynamic" id="masterThresholdScale">
+            <span>0%</span><span class="acc-slider-current" id="masterThresholdMidLabel">50%</span><span>100%</span>
+          </div>
         </div>
         <div class="acc-hint" id="masterHint"></div>
       </div>
@@ -2114,22 +2140,28 @@ function applyTestSettingsToUI(){
   document.getElementById('accThreshold').value = Math.max(0, Math.min(100, testSettings.threshold ?? 50));
   document.getElementById('accThresholdVal').textContent = document.getElementById('accThreshold').value;
   updateAccScopeCardStyle();
+  positionSliderCurrentLabel(document.getElementById('accThreshold'), document.getElementById('accThresholdMidLabel'), document.getElementById('accThresholdScale'), '%');
 
   const masterWindowSizeEl = document.getElementById('masterWindowSize');
   if(masterWindowSizeEl){
+    // 슬라이더의 최대값은 단어 수와 20 중 작은 쪽으로 제한하되, 최소 3은 보장한다.
     const maxWindow = Math.max(3, Math.min(20, WORDS.length || 20));
     masterWindowSizeEl.max = maxWindow;
-    const wv = Math.max(3, Math.min(maxWindow, testSettings.masterWindowSize || 10));
+    // 기본값은 10개. 등록된 단어가 일시적으로 적어 화면 표시값을 캡했더라도,
+    // 저장된 설정(testSettings.masterWindowSize)은 건드리지 않아 단어가 늘어나면 다시 10으로 돌아온다.
+    const desired = testSettings.masterWindowSize || 10;
+    const wv = Math.max(3, Math.min(maxWindow, desired));
     masterWindowSizeEl.value = wv;
     document.getElementById('masterWindowLabel').textContent = wv;
     document.getElementById('masterWindowVal').textContent = wv;
-    testSettings.masterWindowSize = wv;
+    positionSliderCurrentLabel(masterWindowSizeEl, document.getElementById('masterWindowMidLabel'), document.getElementById('masterWindowScale'), '');
   }
   const masterThresholdEl = document.getElementById('masterThreshold');
   if(masterThresholdEl){
     const mt = Math.max(0, Math.min(100, testSettings.masterThreshold ?? 50));
     masterThresholdEl.value = mt;
     document.getElementById('masterThresholdVal').textContent = mt;
+    positionSliderCurrentLabel(masterThresholdEl, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
   }
   updateMasterHint();
 }
@@ -2386,8 +2418,15 @@ function resetTestSetup(force=false){
         document.getElementById('modeAccuracy').style.display=testMode==='accuracy'?'block':'none';
         document.getElementById('modeMaster').style.display=testMode==='master'?'block':'none';
         document.getElementById('rangeErr').textContent='';
-        if(testMode==='accuracy') updateAccuracyHint();
-        if(testMode==='master') updateMasterHint();
+        if(testMode==='accuracy'){
+          updateAccuracyHint();
+          positionSliderCurrentLabel(document.getElementById('accThreshold'), document.getElementById('accThresholdMidLabel'), document.getElementById('accThresholdScale'), '%');
+        }
+        if(testMode==='master'){
+          updateMasterHint();
+          positionSliderCurrentLabel(document.getElementById('masterWindowSize'), document.getElementById('masterWindowMidLabel'), document.getElementById('masterWindowScale'), '');
+          positionSliderCurrentLabel(document.getElementById('masterThreshold'), document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
+        }
       }));
 
       document.getElementById('accRecentN').addEventListener('input',()=>{syncTestSettingsFromUI();updateAccuracyHint();});
@@ -2401,17 +2440,23 @@ function resetTestSetup(force=false){
         syncTestSettingsFromUI();updateAccScopeCardStyle();updateAccuracyHint();
       }));
       const thresholdSlider=document.getElementById('accThreshold');
-      thresholdSlider.addEventListener('input',()=>{document.getElementById('accThresholdVal').textContent=thresholdSlider.value;syncTestSettingsFromUI();updateAccuracyHint();});
+      thresholdSlider.addEventListener('input',()=>{
+        document.getElementById('accThresholdVal').textContent=thresholdSlider.value;
+        positionSliderCurrentLabel(thresholdSlider, document.getElementById('accThresholdMidLabel'), document.getElementById('accThresholdScale'), '%');
+        syncTestSettingsFromUI();updateAccuracyHint();
+      });
 
       const masterWindowSlider=document.getElementById('masterWindowSize');
       masterWindowSlider.addEventListener('input',()=>{
         document.getElementById('masterWindowLabel').textContent=masterWindowSlider.value;
         document.getElementById('masterWindowVal').textContent=masterWindowSlider.value;
+        positionSliderCurrentLabel(masterWindowSlider, document.getElementById('masterWindowMidLabel'), document.getElementById('masterWindowScale'), '');
         syncTestSettingsFromUI();updateMasterHint();
       });
       const masterThresholdSlider=document.getElementById('masterThreshold');
       masterThresholdSlider.addEventListener('input',()=>{
         document.getElementById('masterThresholdVal').textContent=masterThresholdSlider.value;
+        positionSliderCurrentLabel(masterThresholdSlider, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
         syncTestSettingsFromUI();updateMasterHint();
       });
     }
@@ -2423,6 +2468,38 @@ function resetTestSetup(force=false){
   updateAccuracyHint();
 }
 
+// 슬라이더 값이 바뀔 때마다, 그 값을 보여주는 라벨을 손잡이의 실제 위치에 맞춰
+// 배치하는 헬퍼. min/max 고정 텍스트가 아니라 "현재 값"을 항상 따라다니게 해서,
+// 슬라이더 범위가 0~100이 아닌 경우(예: 3~20)에도 값과 라벨 위치가 어긋나지 않는다.
+// suffix: 값 뒤에 붙일 문자열(예: '%')
+function positionSliderCurrentLabel(sliderEl, currentLabelEl, scaleEl, suffix){
+  if(!sliderEl || !currentLabelEl || !scaleEl) return;
+  const min = parseFloat(sliderEl.min);
+  const max = parseFloat(sliderEl.max);
+  const val = parseFloat(sliderEl.value);
+  if(!Number.isFinite(min) || !Number.isFinite(max) || max<=min || !Number.isFinite(val)) return;
+  currentLabelEl.textContent = val + (suffix || '');
+
+  const firstLabel = scaleEl.firstElementChild;
+  const lastLabel = scaleEl.lastElementChild;
+  if(firstLabel) firstLabel.style.left = '0px';
+  if(lastLabel) lastLabel.style.left = '100%';
+
+  // 트랙 폭 대비 손잡이가 위치하는 비율 (0~1). scaleEl 좌우 10px 패딩은
+  // 슬라이더 손잡이 반지름(20px÷2)만큼의 보정과 대응된다.
+  const ratio = (val - min) / (max - min);
+  const trackWidth = scaleEl.clientWidth - 20;
+  const leftPx = 10 + trackWidth * ratio;
+  currentLabelEl.style.left = leftPx + 'px';
+
+  // 현재 값이 양 끝(최소/최대)에 가까워지면 현재값 라벨이 끝 라벨과 겹쳐
+  // 텍스트가 포개져 보이므로, 그 경우 겹치는 쪽 끝 라벨을 숨긴다.
+  const nearMin = ratio < 0.12;
+  const nearMax = ratio > 0.88;
+  if(firstLabel) firstLabel.style.visibility = nearMin ? 'hidden' : 'visible';
+  if(lastLabel) lastLabel.style.visibility = nearMax ? 'hidden' : 'visible';
+}
+
 function updateAccScopeCardStyle(){
   document.querySelectorAll('.acc-scope-card').forEach(card=>{
     const radio = card.querySelector('input[type=radio]');
@@ -2431,11 +2508,19 @@ function updateAccScopeCardStyle(){
 }
 
 function getWordsByAccuracyFilter(){
-  const scope = document.querySelector('input[name=accScope]:checked').value;
-  const threshold = parseInt(document.getElementById('accThreshold').value, 10);
-  const recentN = parseInt(document.getElementById('accRecentN').value, 10);
-  const from = parseInt(document.getElementById('rangeFrom').value, 10);
-  const to = parseInt(document.getElementById('rangeTo').value, 10);
+  const scope = document.querySelector('input[name=accScope]:checked')?.value || 'recentN';
+  const thresholdInput = document.getElementById('accThreshold');
+  const recentNInput = document.getElementById('accRecentN');
+  const fromInput = document.getElementById('rangeFrom');
+  const toInput = document.getElementById('rangeTo');
+  if(!thresholdInput || !recentNInput || !fromInput || !toInput){
+    // 테스트 설정 화면이 아직 렌더링되지 않은 시점(다른 탭 등)에 호출된 경우 안전하게 빈 결과 반환
+    return { pool: [], error: null };
+  }
+  const threshold = parseInt(thresholdInput.value, 10);
+  const recentN = parseInt(recentNInput.value, 10);
+  const from = parseInt(fromInput.value, 10);
+  const to = parseInt(toInput.value, 10);
   const stats = loadWordStats();
 
   if(isNaN(threshold)) return { pool: [], error: '정답률 기준(%)을 입력해주세요.' };
