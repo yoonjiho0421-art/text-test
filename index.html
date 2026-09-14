@@ -1506,18 +1506,26 @@ function openDeck(deckId, opts){
   document.getElementById('panel-deckhome').classList.remove('active');
   document.getElementById('panel-deckapp').classList.add('active');
 
-  loadDeckData();
-  testSetupInitialized = false;
-  quizState = null;
-  renderStats();
-  resetTestSetup(true);
-  renderWordList('');
+  // 탭/패널을 먼저 "단어 관리"로 활성화한 뒤에 데이터를 그려야, 렌더링 시점에
+  // wordList/groupList가 실제로 화면에 보이는 상태(display:block)가 되어
+  // 최초 진입 시 단어·그룹이 비어 보이는 문제를 막을 수 있다.
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
   document.querySelector('nav.tabs button[data-tab="manage"]').classList.add('active');
   document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-manage').classList.add('active');
   document.getElementById('quizArea').style.display = 'none';
   document.getElementById('resultArea').style.display = 'none';
+  // 이전 단어장의 시험/결과 화면 내용이 그대로 메모리에 남아있다가, 어떤 경로로든
+  // 다시 보이게 되는 일을 막기 위해 내용을 비워둔다.
+  document.getElementById('quizArea').innerHTML = '';
+  document.getElementById('resultArea').innerHTML = '';
+
+  loadDeckData();
+  testSetupInitialized = false;
+  quizState = null;
+  renderStats();
+  resetTestSetup(true);
+  renderWordList('');
 
   if(!opts.skipHistoryPush){
     history.pushState({ vocabBenchView: 'deckapp' }, '');
@@ -1604,8 +1612,11 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='test') {
       resetTestSetup();
+      quizState = null;
       document.getElementById('quizArea').style.display='none';
       document.getElementById('resultArea').style.display='none';
+      document.getElementById('quizArea').innerHTML='';
+      document.getElementById('resultArea').innerHTML='';
       document.getElementById('testSetup').style.display=WORDS.length ? 'block' : 'none';
     }
     if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
@@ -2745,23 +2756,26 @@ function checkMasterAnswer(skip){
   document.getElementById('quizSkip').style.display = 'none';
 }
 
-// 활성 슬롯은 항상 큐 앞부분(등록/재도전 순서)의 windowSize개를 그대로 보여주는
-// "창(window)"이다. 매 문제는 반드시 active[0]에서 꺼내 처리하고, 통과했으면
-// 그 자리를 비우고 큐에서 다음 단어를 뒤에 채운다. 통과하지 못했으면 그 단어를
-// 큐 맨 뒤로 보내고 역시 큐에서 다음 단어를 뒤에 채운다.
-// 이 방식이면 오답 단어는 정확히 "현재 대기 중인 단어 수만큼" 뒤에 다시 등장하며,
-// 활성 슬롯 크기(windowSize)가 항상 일정하게 유지된다.
+// 활성 슬롯은 처음 화면에 뜬 windowSize개의 단어를 그대로 "순환"시킨다.
+// 매 문제는 반드시 active[0]에서 꺼내 처리한다.
+//  - 통과: active에서 제거하고, 그 때만 큐에서 새 단어 하나를 슬롯 맨 뒤에 채운다.
+//  - 통과 실패(오답/정답률 미달): 새 단어를 끌어오지 않고, 같은 단어를 슬롯 맨 뒤로
+//    돌려보낸다. 이러면 오답 단어는 정확히 "현재 화면에 떠 있는 단어 수(windowSize
+//    또는 그보다 적을 수 있음)"만큼 뒤에 다시 등장하며, 화면 밖의 새 단어들이
+//    끼어들어 재등장을 미루는 일이 없다.
 function nextMasterStep(willClear){
   const st = quizState;
-  const cur = st.active.shift(); // 방금 처리한 단어를 슬롯에서 제거
+  const cur = st.active.shift(); // 방금 처리한 단어를 슬롯 맨 앞에서 제거
 
   if(willClear){
     st.clearedCount++;
+    if(st.queue.length > 0){
+      st.active.push(st.queue.shift()); // 자리가 났을 때만 큐에서 새 단어를 채운다
+    }
   }else{
-    st.queue.push(cur); // 대기열 맨 뒤로 보내 다시 등장하게 함
+    st.active.push(cur); // 새 단어를 끌어오지 않고 같은 슬롯 안에서 순환시킨다
   }
 
-  fillMasterActive();
   renderMasterStep();
 }
 
@@ -2792,6 +2806,7 @@ function showMasterResult(){
       <div class="group-cleared-note">✓ 등록된 모든 단어를 기준 정답률 초과로 통과했습니다.</div>
       <div class="quiz-btns">
         <button class="btn-primary" id="retryBtn">다시 전체 암기</button>
+        <button class="btn-ghost" id="toSetupBtn">다른 시험 설정하기</button>
         <button class="btn-ghost" id="backBtn">단어 관리로</button>
       </div>
       ${struggledWords.length ? `
@@ -2819,6 +2834,13 @@ function showMasterResult(){
       return;
     }
     startMasterQuiz(result.pool, {windowSize: st.windowSize, threshold: st.threshold});
+  });
+  document.getElementById('toSetupBtn').addEventListener('click', ()=>{
+    quizState = null;
+    document.getElementById('resultArea').style.display = 'none';
+    document.getElementById('resultArea').innerHTML = '';
+    resetTestSetup(true);
+    document.getElementById('testSetup').style.display = WORDS.length ? 'block' : 'none';
   });
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
@@ -2970,6 +2992,7 @@ function showResult(){
       <div class="quiz-btns">
         <button class="btn-primary" id="retryBtn">${st.groupKey ? '이 그룹 다시 풀기' : '다시 테스트'}</button>
         ${st.wrongList.length ? `<button class="btn-danger" id="retryWrongBtn">틀린 것만 다시 (${st.wrongList.length}개)</button>` : ''}
+        <button class="btn-ghost" id="toSetupBtn">다른 시험 설정하기</button>
         <button class="btn-ghost" id="backBtn">단어 관리로</button>
       </div>
       ${st.wrongList.length ? `
@@ -3002,6 +3025,13 @@ function showResult(){
     }else{
       resetTestSetup();
     }
+  });
+  document.getElementById('toSetupBtn').addEventListener('click', ()=>{
+    quizState = null;
+    document.getElementById('resultArea').style.display = 'none';
+    document.getElementById('resultArea').innerHTML = '';
+    resetTestSetup(true);
+    document.getElementById('testSetup').style.display = WORDS.length ? 'block' : 'none';
   });
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
