@@ -910,18 +910,22 @@
   }
   .acc-slider-scale.acc-slider-scale-dynamic span{
     position:absolute;
+    left:0;
     transform:translateX(-50%);
     white-space:nowrap;
   }
   .acc-slider-scale.acc-slider-scale-dynamic span:first-child{
+    left:0;
     transform:translateX(0);
   }
   .acc-slider-scale.acc-slider-scale-dynamic span:last-child{
+    left:100%;
     transform:translateX(-100%);
   }
   .acc-slider-scale.acc-slider-scale-dynamic span.acc-slider-current{
     color:var(--accent);
     font-weight:700;
+    left:50%;
   }
   .acc-hint{
     font-size:12px;
@@ -1233,7 +1237,7 @@
           <div class="acc-threshold-label">한 번에 볼 단어 수 <b id="masterWindowLabel">10</b>개</div>
           <input type="range" id="masterWindowSize" min="3" max="20" step="1" value="10" class="acc-slider">
           <div class="acc-slider-scale acc-slider-scale-dynamic" id="masterWindowScale">
-            <span>3</span><span class="acc-slider-current" id="masterWindowMidLabel">10</span><span>20</span>
+            <span>3</span><span class="acc-slider-current" id="masterWindowMidLabel" style="left:41.18%;">10</span><span>20</span>
           </div>
         </div>
         <div class="acc-threshold-block">
