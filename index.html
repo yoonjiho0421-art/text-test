@@ -2487,10 +2487,11 @@ function positionSliderCurrentLabel(sliderEl, currentLabelEl, scaleEl, suffix){
 
   // 트랙 폭 대비 손잡이가 위치하는 비율 (0~1). scaleEl 좌우 10px 패딩은
   // 슬라이더 손잡이 반지름(20px÷2)만큼의 보정과 대응된다.
+  // clientWidth(실제 렌더링 폭)에 의존하면 탭이 display:none으로 숨겨진 상태에서
+  // 계산할 때 폭이 0으로 잡혀 라벨이 전부 왼쪽으로 몰리므로, calc()로 CSS가
+  // 렌더링 시점에 알아서 비율을 계산하게 한다(숨김 상태에서 호출돼도 항상 정확함).
   const ratio = (val - min) / (max - min);
-  const trackWidth = scaleEl.clientWidth - 20;
-  const leftPx = 10 + trackWidth * ratio;
-  currentLabelEl.style.left = leftPx + 'px';
+  currentLabelEl.style.left = `calc(${ratio * 100}% + ${10 - ratio * 20}px)`;
 
   // 현재 값이 양 끝(최소/최대)에 가까워지면 현재값 라벨이 끝 라벨과 겹쳐
   // 텍스트가 포개져 보이므로, 그 경우 겹치는 쪽 끝 라벨을 숨긴다.
