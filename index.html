@@ -1242,9 +1242,9 @@
         </div>
         <div class="acc-threshold-block">
           <div class="acc-threshold-label">이번 시험 중 정답률 <b id="masterThresholdVal">50</b>% 초과 시 통과</div>
-          <input type="range" id="masterThreshold" min="0" max="90" step="10" value="50" class="acc-slider">
+          <input type="range" id="masterThreshold" min="0" max="100" step="10" value="50" class="acc-slider">
           <div class="acc-slider-scale acc-slider-scale-dynamic" id="masterThresholdScale">
-            <span>0%</span><span class="acc-slider-current" id="masterThresholdMidLabel">50%</span><span>90%</span>
+            <span>0%</span><span class="acc-slider-current" id="masterThresholdMidLabel">50%</span><span>100%</span>
           </div>
         </div>
         <div class="acc-hint" id="masterHint"></div>
@@ -1261,7 +1261,6 @@
   </section>
 
   <footer class="credit">
-    <span id="appVersionLine">버전 1.1.23</span><br>
     데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
     저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
   </footer>
@@ -1539,24 +1538,40 @@ function openDeck(deckId, opts){
   document.getElementById('quizArea').innerHTML = '';
   document.getElementById('resultArea').innerHTML = '';
 
-  // 저장된 단어는 즉시 렌더링한다. words.xlsx는 최초 실행에서만 비동기로
-  // 추가되므로, XLSX 로딩을 기다리느라 첫 화면이 빈 상태로 남지 않게 한다.
   testSetupInitialized = false;
   quizState = null;
   renderStats();
-  try{ resetTestSetup(true); }catch(e){}
-  renderWordList(document.getElementById('searchBox').value || '');
-  forceRepaint(document.getElementById('panel-deckapp'));
-  forceRepaint(document.getElementById('panel-manage'));
 
-  // 최초 실행에서 words.xlsx가 실제로 단어를 추가했다면 목록만 다시 그린다.
-  // 기존 단어가 이미 localStorage에 있으면 이 비동기 작업이 화면 표시를 지연시키지 않는다.
-  loadDeckData().then(()=>{
+  // words.xlsx가 최초 실행에서 비동기로 로드되는 경우, 기존에는
+  // WORDS가 아직 비어 있는 상태에서 resetTestSetup(true)가 먼저 실행되어
+  // 테스트 설정 화면이 숨겨진 채로 남았다.
+  // 단어 로드가 끝난 뒤 테스트 설정을 다시 초기화하도록 순서를 보장한다.
+  const deckDataReady = loadDeckData();
+  Promise.resolve(deckDataReady).then(()=>{
+    resetTestSetup(true);
     renderStats();
     renderWordList(document.getElementById('searchBox').value || '');
-    forceRepaint(document.getElementById('panel-deckapp'));
-    forceRepaint(document.getElementById('panel-manage'));
+
+    // 현재 테스트 탭을 보고 있는 상태라면, 비동기 단어 로드 완료 직후
+    // 테스트 설정 화면도 즉시 표시한다.
+    const testPanel = document.getElementById('panel-test');
+    const setupEl = document.getElementById('testSetup');
+    const emptyEl = document.getElementById('testEmptyState');
+    if(testPanel?.classList.contains('active')){
+      const hasWords = WORDS.length > 0;
+      setupEl.style.display = hasWords ? 'block' : 'none';
+      emptyEl.style.display = hasWords ? 'none' : 'block';
+      forceRepaint(testPanel);
+    }
+  }).catch(()=>{
+    // loadDeckData 내부에서 초기 데이터 파일 오류를 이미 안전하게 처리한다.
   });
+  // 일부 모바일 브라우저는 display:none -> block 전환과 같은 실행 흐름 안에서
+  // 자식 내용을 채워도 실제 화면 페인트를 미뤄뒀다가, 스크롤/입력 포커스 등
+  // 사용자 상호작용이 있어야 뒤늦게 반영하는 경우가 있다. 내용을 모두 채운 뒤
+  // 강제로 리페인트를 유도해서 상호작용 없이도 바로 보이게 한다.
+  forceRepaint(document.getElementById('panel-deckapp'));
+  forceRepaint(document.getElementById('panel-manage'));
 
   if(!opts.skipHistoryPush){
     history.pushState({ vocabBenchView: 'deckapp' }, '');
@@ -1614,30 +1629,25 @@ function loadDeckData(){
   openGroups.clear();
   wordStatsCache = null;
 
-  // 최초 실행에서는 words.xlsx가 비동기로 로드된다. 기존에는 openDeck()이
-  // 비동기 로딩이 끝나기 전에 renderWordList()를 실행해서, 첫 진입 시
-  // 빈 목록이 렌더링된 상태로 남을 수 있었다. 데이터 로딩 완료를 Promise로
-  // 반환해 openDeck()이 단어를 읽은 뒤 화면을 초기화/렌더링하도록 한다.
-  if(IS_FIRST_RUN){
-    return fetch('./words.xlsx')
-      .then(res=>{
-        if(!res.ok) throw new Error('words.xlsx not found');
-        return res.arrayBuffer();
-      })
-      .then(buf=>{
-        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-        const { added } = parseWordsFromWorkbook(wb, WORDS);
-        if(added.length>0){
-          WORDS.push(...added);
-          saveWords(WORDS);
-        }
-      })
-      .catch(()=>{
-        // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시
-      });
+  if(!IS_FIRST_RUN){
+    return Promise.resolve();
   }
 
-  return Promise.resolve();
+  return fetch('./words.xlsx')
+    .then(res=>{
+      if(!res.ok) throw new Error('words.xlsx not found');
+      return res.arrayBuffer();
+    })
+    .then(buf=>{
+      const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+      const { added } = parseWordsFromWorkbook(wb, WORDS);
+      if(added.length===0) return;
+      WORDS.push(...added);
+      saveWords(WORDS);
+    })
+    .catch(()=>{
+      // words.xlsx가 없는 배포 환경일 수 있으므로 조용히 무시한다.
+    });
 }
 
 /* ---------- Tabs ---------- */
@@ -1649,13 +1659,16 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     const targetPanel = document.getElementById('panel-'+btn.dataset.tab);
     targetPanel.classList.add('active');
     if(btn.dataset.tab==='test') {
-      resetTestSetup();
       quizState = null;
       document.getElementById('quizArea').style.display='none';
       document.getElementById('resultArea').style.display='none';
       document.getElementById('quizArea').innerHTML='';
       document.getElementById('resultArea').innerHTML='';
-      document.getElementById('testSetup').style.display=WORDS.length ? 'block' : 'none';
+
+      resetTestSetup(true);
+      const hasWords = WORDS.length > 0;
+      document.getElementById('testSetup').style.display = hasWords ? 'block' : 'none';
+      document.getElementById('testEmptyState').style.display = hasWords ? 'none' : 'block';
     }
     if(btn.dataset.tab==='manage') renderWordList(document.getElementById('searchBox').value);
     // 일부 모바일 브라우저는 display:none -> block 전환과 같은 실행 흐름 안에서
@@ -2207,24 +2220,21 @@ function applyTestSettingsToUI(){
     masterWindowSizeEl.max = maxWindow;
     // 기본값은 10개. 등록된 단어가 일시적으로 적어 화면 표시값을 캡했더라도,
     // 저장된 설정(testSettings.masterWindowSize)은 건드리지 않아 단어가 늘어나면 다시 10으로 돌아온다.
-    const desired = Number.isFinite(Number(testSettings.masterWindowSize))
-      ? Number(testSettings.masterWindowSize) : 10;
+    const desired = testSettings.masterWindowSize || 10;
     const wv = Math.max(3, Math.min(maxWindow, desired));
     masterWindowSizeEl.value = wv;
-    testSettings.masterWindowSize = wv;
     document.getElementById('masterWindowLabel').textContent = wv;
     document.getElementById('masterWindowVal').textContent = wv;
     positionSliderCurrentLabel(masterWindowSizeEl, document.getElementById('masterWindowMidLabel'), document.getElementById('masterWindowScale'), '');
   }
   const masterThresholdEl = document.getElementById('masterThreshold');
   if(masterThresholdEl){
-    const mt = Math.max(0, Math.min(90, testSettings.masterThreshold ?? 50));
+    const mt = Math.max(0, Math.min(100, testSettings.masterThreshold ?? 50));
     masterThresholdEl.value = mt;
     document.getElementById('masterThresholdVal').textContent = mt;
     positionSliderCurrentLabel(masterThresholdEl, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
   }
   updateMasterHint();
-  saveTestSettings();
 }
 function getSelectedAccuracyGroups(){
   const el = document.getElementById('accuracyGroupButtons');
@@ -2427,7 +2437,7 @@ function resetTestSetup(force=false){
     const maxN=Math.max(1, WORDS.length);
     if(!Number.isFinite(testSettings.count) || testSettings.count<1) testSettings.count=10;
     testSettings.count=Math.min(testSettings.count,maxN);
-    testMode=testSettings.mode==='accuracy'?'accuracy':(testSettings.mode==='master'?'master':'count');
+    testMode=testSettings.mode==='accuracy'?'accuracy':'count';
 
     const countSelect=document.getElementById('countSelect');
     const options=[10,20,30,50,WORDS.length];
@@ -2664,39 +2674,6 @@ function shuffle(arr){
     [a[i],a[j]] = [a[j],a[i]];
   }
   return a;
-}
-
-function shuffleRetryPool(pool, previousItems){
-  const base = Array.isArray(pool) ? pool.slice() : [];
-  if(base.length <= 1 || !Array.isArray(previousItems) || previousItems.length === 0){
-    return shuffle(base);
-  }
-
-  const previousKeys = new Set(previousItems.map(w => String(w.word).toLowerCase()));
-  const targetSize = Math.min(base.length, previousItems.length);
-  const alternatives = base.filter(w => !previousKeys.has(String(w.word).toLowerCase()));
-
-  // 가능한 경우 이전 시험과 다른 단어를 우선 구성한다.
-  if(alternatives.length >= targetSize){
-    return shuffle(alternatives).slice(0, targetSize);
-  }
-
-  // 후보가 부족하면 전체 후보에서 섞되, 완전히 같은 조합은 최대 12회 피한다.
-  const previousSignature = previousItems
-    .map(w => String(w.word).toLowerCase())
-    .sort()
-    .join("\\u0001");
-
-  for(let i=0;i<12;i++){
-    const candidate = shuffle(base).slice(0, targetSize);
-    const signature = candidate
-      .map(w => String(w.word).toLowerCase())
-      .sort()
-      .join("\\u0001");
-    if(signature !== previousSignature) return candidate;
-  }
-
-  return shuffle(base).slice(0, targetSize);
 }
 
 function startQuiz(pool, groupKey, condition){
@@ -2947,7 +2924,7 @@ document.addEventListener('keydown', (e)=>{
   const st = quizState;
   if(st.mode === 'master'){
     if(!st.answered) checkMasterAnswer();
-    else if(document.getElementById('quizSubmit')) document.getElementById('quizSubmit').click();
+    else document.getElementById('quizSubmit')?.click();
   }else{
     if(!st.answered) checkAnswer();
     else nextStep();
@@ -3100,7 +3077,7 @@ function showResult(){
         document.getElementById('rangeErr').textContent=result.error || '조건에 맞는 단어가 없습니다.';
         return;
       }
-      startQuiz(shuffleRetryPool(result.pool, st.items), st.groupKey, st.condition);
+      startQuiz(shuffle(result.pool), st.groupKey, st.condition);
     }else if(st.groupKey){
       startQuiz(shuffle(st.items), st.groupKey);
     }else{
@@ -3128,17 +3105,6 @@ function showResult(){
   }
 }
 
-/* ---------- app version ---------- */
-// 배포 시 Git 태그(vX.Y.Z)를 GitHub Actions가 이 값에 자동 주입합니다.
-const APP_VERSION = '1.1.23';
-
-function renderAppVersion(){
-  const el = document.getElementById('appVersionLine');
-  if(el) el.textContent = `버전 ${APP_VERSION}`;
-}
-
-renderAppVersion();
-
 /* ---------- init ---------- */
 (function initApp(){
   const lastDeckId = getCurrentDeckId();
@@ -3151,6 +3117,49 @@ renderAppVersion();
   }
 })();
 
+/* ---------- PWA: service worker & install prompt ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+if(!isStandalone() && isIOS()){
+  const hint = document.getElementById('iosHint');
+  if(hint) hint.classList.add('show');
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn && !isStandalone()) btn.style.display = 'inline-flex';
+});
+
+(function bindInstallBtn(){
+  const btn = document.getElementById('installBtn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    btn.style.display = 'none';
+  });
+})();
+
+window.addEventListener('appinstalled', ()=>{
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'none';
+});
 </script>
 </body>
 </html>
