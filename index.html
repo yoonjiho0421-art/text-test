@@ -1505,6 +1505,9 @@ function openDeck(deckId, opts){
 
   document.getElementById('panel-deckhome').classList.remove('active');
   document.getElementById('panel-deckapp').classList.add('active');
+  // display:none -> block 직후 같은 흐름에서 자식을 렌더링하면 일부 모바일
+  // 브라우저가 리플로우를 미루는 경우가 있어, offsetHeight로 강제 리플로우를 유도한다.
+  void document.getElementById('panel-deckapp').offsetHeight;
 
   // 탭/패널을 먼저 "단어 관리"로 활성화한 뒤에 데이터를 그려야, 렌더링 시점에
   // wordList/groupList가 실제로 화면에 보이는 상태(display:block)가 되어
@@ -1513,6 +1516,7 @@ function openDeck(deckId, opts){
   document.querySelector('nav.tabs button[data-tab="manage"]').classList.add('active');
   document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-manage').classList.add('active');
+  void document.getElementById('panel-manage').offsetHeight;
   document.getElementById('quizArea').style.display = 'none';
   document.getElementById('resultArea').style.display = 'none';
   // 이전 단어장의 시험/결과 화면 내용이 그대로 메모리에 남아있다가, 어떤 경로로든
@@ -1609,7 +1613,13 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('#panel-deckapp .panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    const targetPanel = document.getElementById('panel-'+btn.dataset.tab);
+    targetPanel.classList.add('active');
+    // 일부 모바일 브라우저는 display:none -> block 전환 직후 같은 실행 흐름 안에서
+    // 자식 innerHTML을 채우면 레이아웃을 즉시 다시 그리지 않고, 스크롤/터치 등
+    // 사용자 상호작용이 있어야 뒤늦게 반영하는 경우가 있다. offsetHeight를 읽어
+    // 강제로 리플로우를 트리거해서 패널이 화면에 실제로 자리잡은 뒤에 내용을 채운다.
+    void targetPanel.offsetHeight;
     if(btn.dataset.tab==='test') {
       resetTestSetup();
       quizState = null;
@@ -2840,7 +2850,9 @@ function showMasterResult(){
     document.getElementById('resultArea').style.display = 'none';
     document.getElementById('resultArea').innerHTML = '';
     resetTestSetup(true);
-    document.getElementById('testSetup').style.display = WORDS.length ? 'block' : 'none';
+    const setupEl = document.getElementById('testSetup');
+    setupEl.style.display = WORDS.length ? 'block' : 'none';
+    void setupEl.offsetHeight;
   });
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
@@ -3031,7 +3043,9 @@ function showResult(){
     document.getElementById('resultArea').style.display = 'none';
     document.getElementById('resultArea').innerHTML = '';
     resetTestSetup(true);
-    document.getElementById('testSetup').style.display = WORDS.length ? 'block' : 'none';
+    const setupEl = document.getElementById('testSetup');
+    setupEl.style.display = WORDS.length ? 'block' : 'none';
+    void setupEl.offsetHeight;
   });
   document.getElementById('backBtn').addEventListener('click', ()=>{
     document.querySelector('nav.tabs button[data-tab="manage"]').click();
