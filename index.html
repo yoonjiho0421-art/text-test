@@ -2565,6 +2565,7 @@ function positionSliderCurrentLabel(sliderEl, currentLabelEl, scaleEl, suffix){
 function updateAccScopeCardStyle(){
   document.querySelectorAll('.acc-scope-card').forEach(card=>{
     const radio = card.querySelector('input[type=radio]');
+    if(!radio) return;
     card.classList.toggle('checked', radio.checked);
   });
 }
