@@ -1242,9 +1242,9 @@
         </div>
         <div class="acc-threshold-block">
           <div class="acc-threshold-label">이번 시험 중 정답률 <b id="masterThresholdVal">50</b>% 초과 시 통과</div>
-          <input type="range" id="masterThreshold" min="0" max="100" step="10" value="50" class="acc-slider">
+          <input type="range" id="masterThreshold" min="0" max="90" step="10" value="50" class="acc-slider">
           <div class="acc-slider-scale acc-slider-scale-dynamic" id="masterThresholdScale">
-            <span>0%</span><span class="acc-slider-current" id="masterThresholdMidLabel">50%</span><span>100%</span>
+            <span>0%</span><span class="acc-slider-current" id="masterThresholdMidLabel">50%</span><span>90%</span>
           </div>
         </div>
         <div class="acc-hint" id="masterHint"></div>
@@ -2194,21 +2194,24 @@ function applyTestSettingsToUI(){
     masterWindowSizeEl.max = maxWindow;
     // 기본값은 10개. 등록된 단어가 일시적으로 적어 화면 표시값을 캡했더라도,
     // 저장된 설정(testSettings.masterWindowSize)은 건드리지 않아 단어가 늘어나면 다시 10으로 돌아온다.
-    const desired = testSettings.masterWindowSize || 10;
+    const desired = Number.isFinite(Number(testSettings.masterWindowSize))
+      ? Number(testSettings.masterWindowSize) : 10;
     const wv = Math.max(3, Math.min(maxWindow, desired));
     masterWindowSizeEl.value = wv;
+    testSettings.masterWindowSize = wv;
     document.getElementById('masterWindowLabel').textContent = wv;
     document.getElementById('masterWindowVal').textContent = wv;
     positionSliderCurrentLabel(masterWindowSizeEl, document.getElementById('masterWindowMidLabel'), document.getElementById('masterWindowScale'), '');
   }
   const masterThresholdEl = document.getElementById('masterThreshold');
   if(masterThresholdEl){
-    const mt = Math.max(0, Math.min(100, testSettings.masterThreshold ?? 50));
+    const mt = Math.max(0, Math.min(90, testSettings.masterThreshold ?? 50));
     masterThresholdEl.value = mt;
     document.getElementById('masterThresholdVal').textContent = mt;
     positionSliderCurrentLabel(masterThresholdEl, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
   }
   updateMasterHint();
+  saveTestSettings();
 }
 function getSelectedAccuracyGroups(){
   const el = document.getElementById('accuracyGroupButtons');
@@ -2411,7 +2414,7 @@ function resetTestSetup(force=false){
     const maxN=Math.max(1, WORDS.length);
     if(!Number.isFinite(testSettings.count) || testSettings.count<1) testSettings.count=10;
     testSettings.count=Math.min(testSettings.count,maxN);
-    testMode=testSettings.mode==='accuracy'?'accuracy':'count';
+    testMode=testSettings.mode==='accuracy'?'accuracy':(testSettings.mode==='master'?'master':'count');
 
     const countSelect=document.getElementById('countSelect');
     const options=[10,20,30,50,WORDS.length];
@@ -2648,6 +2651,39 @@ function shuffle(arr){
     [a[i],a[j]] = [a[j],a[i]];
   }
   return a;
+}
+
+function shuffleRetryPool(pool, previousItems){
+  const base = Array.isArray(pool) ? pool.slice() : [];
+  if(base.length <= 1 || !Array.isArray(previousItems) || previousItems.length === 0){
+    return shuffle(base);
+  }
+
+  const previousKeys = new Set(previousItems.map(w => String(w.word).toLowerCase()));
+  const targetSize = Math.min(base.length, previousItems.length);
+  const alternatives = base.filter(w => !previousKeys.has(String(w.word).toLowerCase()));
+
+  // 가능한 경우 이전 시험과 다른 단어를 우선 구성한다.
+  if(alternatives.length >= targetSize){
+    return shuffle(alternatives).slice(0, targetSize);
+  }
+
+  // 후보가 부족하면 전체 후보에서 섞되, 완전히 같은 조합은 최대 12회 피한다.
+  const previousSignature = previousItems
+    .map(w => String(w.word).toLowerCase())
+    .sort()
+    .join("\\u0001");
+
+  for(let i=0;i<12;i++){
+    const candidate = shuffle(base).slice(0, targetSize);
+    const signature = candidate
+      .map(w => String(w.word).toLowerCase())
+      .sort()
+      .join("\\u0001");
+    if(signature !== previousSignature) return candidate;
+  }
+
+  return shuffle(base).slice(0, targetSize);
 }
 
 function startQuiz(pool, groupKey, condition){
@@ -2898,7 +2934,7 @@ document.addEventListener('keydown', (e)=>{
   const st = quizState;
   if(st.mode === 'master'){
     if(!st.answered) checkMasterAnswer();
-    else document.getElementById('quizSubmit')?.click();
+    else if(document.getElementById('quizSubmit')) document.getElementById('quizSubmit').click();
   }else{
     if(!st.answered) checkAnswer();
     else nextStep();
@@ -3051,7 +3087,7 @@ function showResult(){
         document.getElementById('rangeErr').textContent=result.error || '조건에 맞는 단어가 없습니다.';
         return;
       }
-      startQuiz(shuffle(result.pool), st.groupKey, st.condition);
+      startQuiz(shuffleRetryPool(result.pool, st.items), st.groupKey, st.condition);
     }else if(st.groupKey){
       startQuiz(shuffle(st.items), st.groupKey);
     }else{
@@ -3091,77 +3127,6 @@ function showResult(){
   }
 })();
 
-// 임시 디버그 배너: 특정 UI가 렌더링되지 않는 원인을 화면에서 바로 확인하기 위함.
-// 문제 해결 후 제거 예정.
-(function showDebugBanner(){
-  setTimeout(()=>{
-    try{
-      const info = {
-        WORDS_length: WORDS.length,
-        CURRENT_DECK_ID: CURRENT_DECK_ID,
-        groupList_html_len: document.getElementById('groupList')?.innerHTML.length,
-        wordList_html_snippet: document.getElementById('wordList')?.innerHTML.slice(0,80),
-        panel_manage_class: document.getElementById('panel-manage')?.className,
-        masterHint_text: document.getElementById('masterHint')?.textContent,
-        testSettings_mode: testSettings ? testSettings.mode : null,
-        userAgent: navigator.userAgent
-      };
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;font-family:monospace;padding:8px;z-index:99999;max-height:40vh;overflow:auto;white-space:pre-wrap;word-break:break-all;';
-      banner.textContent = JSON.stringify(info, null, 1);
-      document.body.appendChild(banner);
-    }catch(e){
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#600;color:#fff;font-size:10px;font-family:monospace;padding:8px;z-index:99999;white-space:pre-wrap;';
-      banner.textContent = 'DEBUG ERROR: ' + e.message + '\n' + (e.stack||'');
-      document.body.appendChild(banner);
-    }
-  }, 600);
-})();
-
-/* ---------- PWA: service worker & install prompt ---------- */
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
-}
-
-function isStandalone(){
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-}
-function isIOS(){
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-if(!isStandalone() && isIOS()){
-  const hint = document.getElementById('iosHint');
-  if(hint) hint.classList.add('show');
-}
-
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  const btn = document.getElementById('installBtn');
-  if(btn && !isStandalone()) btn.style.display = 'inline-flex';
-});
-
-(function bindInstallBtn(){
-  const btn = document.getElementById('installBtn');
-  if(!btn) return;
-  btn.addEventListener('click', async ()=>{
-    if(!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    btn.style.display = 'none';
-  });
-})();
-
-window.addEventListener('appinstalled', ()=>{
-  const btn = document.getElementById('installBtn');
-  if(btn) btn.style.display = 'none';
-});
 </script>
 </body>
 </html>
