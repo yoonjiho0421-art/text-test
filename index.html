@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>단어 테스트장</title>
+<meta name="app-version" content="__APP_VERSION__">
 
 <!-- PWA -->
 <link rel="manifest" href="./manifest.json">
@@ -1262,7 +1263,8 @@
 
   <footer class="credit">
     데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
-    저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
+    저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.<br>
+    버전 <b id="appVersion">__APP_VERSION__</b>
   </footer>
 </div>
 
@@ -1291,6 +1293,7 @@
 </div>
 
 <script>
+const APP_VERSION = '__APP_VERSION__';
 /* =====================================================================
    Deck (단어장) system
    ===================================================================== */
@@ -1538,28 +1541,21 @@ function openDeck(deckId, opts){
   document.getElementById('quizArea').innerHTML = '';
   document.getElementById('resultArea').innerHTML = '';
 
-  // 단어 관리 화면은 localStorage에 저장된 WORDS를 즉시 렌더링한다.
-  // words.xlsx는 최초 실행에서만 비동기로 추가되므로, 이를 기다리느라
-  // 단어 관리 화면 전체 렌더링이 지연되지 않도록 분리한다.
+  // 단어 데이터가 준비된 다음 테스트 설정과 단어 목록을 초기화한다.
+  // 특히 최초 진입 시 words.xlsx의 비동기 로딩보다 먼저 렌더링되는 문제를 방지한다.
   loadDeckData().then(()=>{
-    // words.xlsx 로딩으로 단어가 추가된 경우 목록만 다시 그린다.
+    testSetupInitialized = false;
+    quizState = null;
     renderStats();
+    resetTestSetup(true);
     renderWordList(document.getElementById('searchBox').value || '');
+    // 일부 모바일 브라우저는 display:none -> block 전환과 같은 실행 흐름 안에서
+    // 자식 내용을 채워도 실제 화면 페인트를 미뤄뒀다가, 스크롤/입력 포커스 등
+    // 사용자 상호작용이 있어야 뒤늦게 반영하는 경우가 있다. 내용을 모두 채운 뒤
+    // 강제로 리페인트를 유도해서 상호작용 없이도 바로 보이게 한다.
     forceRepaint(document.getElementById('panel-deckapp'));
     forceRepaint(document.getElementById('panel-manage'));
   });
-
-  // 테스트 설정 초기화가 오류를 내더라도 단어 관리 탭 렌더링까지 영향을 받지 않게
-  // 별도로 실행한다.
-  testSetupInitialized = false;
-  quizState = null;
-  try{ resetTestSetup(true); }catch(e){}
-
-  // 최초 진입에서는 이 호출이 반드시 동기적으로 실행되어야 한다.
-  // localStorage에 이미 단어가 저장되어 있다면 앱을 처음 열자마자 바로 표시된다.
-  renderWordList(document.getElementById('searchBox').value || '');
-  forceRepaint(document.getElementById('panel-deckapp'));
-  forceRepaint(document.getElementById('panel-manage'));
 
   if(!opts.skipHistoryPush){
     history.pushState({ vocabBenchView: 'deckapp' }, '');
@@ -3143,6 +3139,16 @@ function showResult(){
   }
 })();
 
+</script>
+
+<script>
+(function setAppVersion(){
+  const version = APP_VERSION === '__APP_VERSION__' ? '개발 버전' : APP_VERSION;
+  const el = document.getElementById('appVersion');
+  if(el) el.textContent = version;
+  const meta = document.querySelector('meta[name="app-version"]');
+  if(meta) meta.content = version;
+})();
 </script>
 </body>
 </html>

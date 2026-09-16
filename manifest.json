@@ -1,7 +1,7 @@
 {
   "name": "단어 테스트장",
   "short_name": "단어테스트",
-  "description": "영단어 뜻 암기 및 테스트 앱",
+  "description": "영단어 뜻 암기 및 테스트 앱 · 버전 __APP_VERSION__",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

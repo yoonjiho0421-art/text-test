@@ -3,7 +3,7 @@
 // 먼저 가져오고, 화면에 그걸 보여줍니다. 캐시는 오프라인일 때만 백업으로 씁니다.
 // (= index.html을 아무리 자주 바꿔도 이 sw.js 파일 자체는 다시 손댈 필요가 없습니다.)
 
-const CACHE_NAME = 'vocab-bench-cache';
+const CACHE_NAME = 'vocab-bench-cache-__APP_VERSION__';
 const ASSETS = [
   './',
   './index.html',
