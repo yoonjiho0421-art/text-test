@@ -1,1 +1,115 @@
+name: Sync Release Version
 
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid tag version: $VERSION"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update index.html
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          version = os.environ["VERSION"]
+          path = Path("index.html")
+
+          if not path.exists():
+              raise SystemExit("index.html not found")
+
+          text = path.read_text(encoding="utf-8")
+
+          # 앱 버전
+          text, n1 = re.subn(
+              r'(APP_VERSION\s*=\s*[\'"])[^\'"]+([\'"])',
+              rf'\g<1>{version}\g<2>',
+              text,
+              count=1
+          )
+
+          # footer의 버전 표시
+          text, n2 = re.subn(
+              r'(버전\s*)[0-9]+\.[0-9]+\.[0-9]+',
+              rf'\g<1>{version}',
+              text
+          )
+
+          path.write_text(text, encoding="utf-8")
+
+          print(f"Version: {version}")
+          print(f"APP_VERSION replacements: {n1}")
+          print(f"Footer replacements: {n2}")
+          PY
+
+      - name: Update manifest.json
+        shell: bash
+        run: |
+          if [ -f manifest.json ]; then
+            python3 <<'PY'
+          import json
+          from pathlib import Path
+          import os
+
+          path = Path("manifest.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+
+          # manifest에 version 필드가 있다면 업데이트
+          data["version"] = os.environ["VERSION"]
+
+          path.write_text(
+              json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          PY
+          fi
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Commit version update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add index.html manifest.json
+
+          if git diff --cached --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: sync version to ${VERSION}"
+          git push origin HEAD:main
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
