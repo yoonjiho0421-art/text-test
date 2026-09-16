@@ -3091,6 +3091,34 @@ function showResult(){
   }
 })();
 
+// 임시 디버그 배너: 특정 UI가 렌더링되지 않는 원인을 화면에서 바로 확인하기 위함.
+// 문제 해결 후 제거 예정.
+(function showDebugBanner(){
+  setTimeout(()=>{
+    try{
+      const info = {
+        WORDS_length: WORDS.length,
+        CURRENT_DECK_ID: CURRENT_DECK_ID,
+        groupList_html_len: document.getElementById('groupList')?.innerHTML.length,
+        wordList_html_snippet: document.getElementById('wordList')?.innerHTML.slice(0,80),
+        panel_manage_class: document.getElementById('panel-manage')?.className,
+        masterHint_text: document.getElementById('masterHint')?.textContent,
+        testSettings_mode: testSettings ? testSettings.mode : null,
+        userAgent: navigator.userAgent
+      };
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;font-family:monospace;padding:8px;z-index:99999;max-height:40vh;overflow:auto;white-space:pre-wrap;word-break:break-all;';
+      banner.textContent = JSON.stringify(info, null, 1);
+      document.body.appendChild(banner);
+    }catch(e){
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#600;color:#fff;font-size:10px;font-family:monospace;padding:8px;z-index:99999;white-space:pre-wrap;';
+      banner.textContent = 'DEBUG ERROR: ' + e.message + '\n' + (e.stack||'');
+      document.body.appendChild(banner);
+    }
+  }, 600);
+})();
+
 /* ---------- PWA: service worker & install prompt ---------- */
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
