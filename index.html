@@ -1261,7 +1261,7 @@
   </section>
 
   <footer class="credit">
-    <span id="appVersionLine">버전 1.1.24</span><br>
+    <span id="appVersionLine">버전 1.1.21</span><br>
     데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
     저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
   </footer>
@@ -1554,6 +1554,9 @@ function openDeck(deckId, opts){
   loadDeckData().then(()=>{
     renderStats();
     renderWordList(document.getElementById('searchBox').value || '');
+    // words.xlsx 로딩으로 단어 수가 뒤늦게 바뀔 수 있으므로, 그 사이 사용자가
+    // 이미 "테스트" 탭을 열어 옛 단어 수 기준으로 초기화됐더라도 다시 맞춰준다.
+    try{ resetTestSetup(true); }catch(e){}
     forceRepaint(document.getElementById('panel-deckapp'));
     forceRepaint(document.getElementById('panel-manage'));
   });
@@ -3131,7 +3134,7 @@ function showResult(){
 
 /* ---------- app version ---------- */
 // 배포 시 Git 태그(vX.Y.Z)를 GitHub Actions가 이 값에 자동 주입합니다.
-const APP_VERSION = '1.1.24';
+const APP_VERSION = '1.1.21';
 
 function renderAppVersion(){
   const el = document.getElementById('appVersionLine');
