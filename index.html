@@ -1225,11 +1225,15 @@
       </div>
 
       <div id="modeMaster" style="display:none;">
+        <div class="accuracy-range-tabs" id="masterOrderTabs">
+          <button type="button" data-order="sequential" class="sel">순서대로</button>
+          <button type="button" data-order="random">무작위</button>
+        </div>
         <div class="acc-scope-cards" style="margin-bottom:14px;">
           <div class="acc-scope-card checked" style="cursor:default;">
             <div class="acc-scope-card-body">
               <div class="acc-scope-card-title">화면에 항상 <span id="masterWindowVal">10</span>개씩 유지</div>
-              <div class="acc-scope-card-sub">등록 순서대로 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.</div>
+              <div class="acc-scope-card-sub" id="masterOrderSub">등록 순서대로 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.</div>
             </div>
           </div>
         </div>
@@ -1261,7 +1265,7 @@
   </section>
 
   <footer class="credit">
-    <span id="appVersionLine">버전 1.1.25</span><br>
+    <span id="appVersionLine">버전 1.1.21</span><br>
     데이터 출처: 사용자 업로드 PDF/엑셀 및 직접 입력 · 어원 설명은 일반적인 라틴어·그리스어·고대영어 어근 지식을 기반으로 하며 학술 검증 자료는 아닙니다.<br>
     저장 방식: 이 브라우저의 localStorage에 저장됩니다. 다른 기기/브라우저에서는 보이지 않습니다.
   </footer>
@@ -2117,7 +2121,8 @@ function defaultTestSettings(){
     recentN: 3,
     threshold: 50,
     masterWindowSize: 10,
-    masterThreshold: 50
+    masterThreshold: 50,
+    masterOrder: 'sequential'
   };
 }
 function loadTestSettings(){
@@ -2158,6 +2163,8 @@ function syncTestSettingsFromUI(){
   if(Number.isFinite(masterWindowSize)) testSettings.masterWindowSize = masterWindowSize;
   const masterThreshold = parseInt(document.getElementById('masterThreshold')?.value,10);
   if(Number.isFinite(masterThreshold)) testSettings.masterThreshold = masterThreshold;
+  const masterOrder = document.querySelector('#masterOrderTabs button.sel')?.dataset.order;
+  if(masterOrder) testSettings.masterOrder = masterOrder;
   saveTestSettings();
 }
 function applyTestSettingsToUI(){
@@ -2225,6 +2232,18 @@ function applyTestSettingsToUI(){
     masterThresholdEl.value = mt;
     document.getElementById('masterThresholdVal').textContent = mt;
     positionSliderCurrentLabel(masterThresholdEl, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
+  }
+  const masterOrderTabs = document.getElementById('masterOrderTabs');
+  if(masterOrderTabs){
+    const order = testSettings.masterOrder === 'random' ? 'random' : 'sequential';
+    testSettings.masterOrder = order;
+    masterOrderTabs.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', b.dataset.order===order));
+    const sub = document.getElementById('masterOrderSub');
+    if(sub){
+      sub.textContent = order==='random'
+        ? '단어를 무작위 순서로 섞어 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.'
+        : '등록 순서대로 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.';
+    }
   }
   updateMasterHint();
   saveTestSettings();
@@ -2329,14 +2348,17 @@ function getCurrentTestCondition(){
     return {
       type:'master',
       windowSize:testSettings.masterWindowSize,
-      threshold:testSettings.masterThreshold
+      threshold:testSettings.masterThreshold,
+      order:testSettings.masterOrder
     };
   }
   return {type:'count', count:testSettings.count};
 }
 function buildPoolFromCondition(condition){
   if(condition.type==='master'){
-    return WORDS.length>0 ? {pool:WORDS.slice(),error:null} : {pool:[],error:'단어가 없습니다.'};
+    if(WORDS.length===0) return {pool:[],error:'단어가 없습니다.'};
+    const pool = condition.order==='random' ? shuffle(WORDS) : WORDS.slice();
+    return {pool,error:null};
   }
   if(condition.type==='group'){
     const groups=buildGroups(GROUP_SIZE);
@@ -2523,6 +2545,23 @@ function resetTestSetup(force=false){
         positionSliderCurrentLabel(masterThresholdSlider, document.getElementById('masterThresholdMidLabel'), document.getElementById('masterThresholdScale'), '%');
         syncTestSettingsFromUI();updateMasterHint();
       });
+
+      const masterOrderTabs=document.getElementById('masterOrderTabs');
+      if(masterOrderTabs){
+        masterOrderTabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+          masterOrderTabs.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+          b.classList.add('sel');
+          testSettings.masterOrder=b.dataset.order;
+          const sub=document.getElementById('masterOrderSub');
+          if(sub){
+            sub.textContent = b.dataset.order==='random'
+              ? '단어를 무작위 순서로 섞어 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.'
+              : '등록 순서대로 진행하며, 한 단어가 빠지면 다음 단어가 즉시 채워집니다.';
+          }
+          saveTestSettings();
+          updateMasterHint();
+        }));
+      }
     }
     testSetupInitialized=true;
   }else{
@@ -2643,7 +2682,8 @@ function updateMasterHint(){
   const thresholdEl = document.getElementById('masterThreshold');
   const windowSize = windowSizeEl ? parseInt(windowSizeEl.value,10) : 10;
   const threshold = thresholdEl ? parseInt(thresholdEl.value,10) : 50;
-  hintEl.textContent = `총 ${WORDS.length}개 단어를 등록 순서대로 진행합니다. 화면에 항상 ${windowSize}개를 유지하며, 이번 시험에서 정답률이 ${threshold}%를 초과한 단어는 통과 처리되고 다음 단어가 채워집니다. 오답이거나 정답률이 기준 이하면 대기열 뒤로 보내 다시 나옵니다.`;
+  const orderText = document.querySelector('#masterOrderTabs button.sel')?.dataset.order==='random' ? '무작위 순서로' : '등록 순서대로';
+  hintEl.textContent = `총 ${WORDS.length}개 단어를 ${orderText} 진행합니다. 화면에 항상 ${windowSize}개를 유지하며, 이번 시험에서 정답률이 ${threshold}%를 초과한 단어는 통과 처리되고 다음 단어가 채워집니다. 오답이거나 정답률이 기준 이하면 대기열 뒤로 보내 다시 나옵니다.`;
 }
 
 document.getElementById('startTestBtn').addEventListener('click', ()=>{
@@ -2910,7 +2950,7 @@ function showMasterResult(){
   `;
 
   document.getElementById('retryBtn').addEventListener('click', ()=>{
-    const result = buildPoolFromCondition({type:'master'});
+    const result = buildPoolFromCondition({type:'master', order: testSettings?.masterOrder});
     if(result.error || result.pool.length===0){
       resetTestSetup();
       document.getElementById('rangeErr').textContent = result.error || '단어가 없습니다.';
@@ -3134,7 +3174,7 @@ function showResult(){
 
 /* ---------- app version ---------- */
 // 배포 시 Git 태그(vX.Y.Z)를 GitHub Actions가 이 값에 자동 주입합니다.
-const APP_VERSION = '1.1.25';
+const APP_VERSION = '1.1.21';
 
 function renderAppVersion(){
   const el = document.getElementById('appVersionLine');
